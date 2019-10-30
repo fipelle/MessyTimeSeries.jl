@@ -5,6 +5,6 @@ The implementation for the Kalman filter and smoother uses symmetric matrices (v
 
 
 ##### Bibliography
-R. H. Shumway and D. S. Stoffer. An approach to time series smoothing and forecasting using the em algorithm. Journal of time series analysis, 3(4):253–264, 1982.
+R. H. Shumway and D. S. Stoffer. An approach to time series smoothing and forecasting using the EM algorithm. Journal of time series analysis, 3(4):253–264, 1982.
 
  
