@@ -1,3 +1,6 @@
 name = "TSAnalysis"
 uuid = "04d71284-fb40-11e9-15e5-dbbde6a47ab4"
 version = "0.1.0"
+
+[compat]
+julia = "≥ 0.7.0"
