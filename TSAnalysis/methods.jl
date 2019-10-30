@@ -175,32 +175,30 @@ Base: time series
 =#
 
 """
-    interpolate(Y::JArray{Float64}, n::Int64, T::Int64)
+    interpolate(X::JArray{Float64}, n::Int64, T::Int64)
 
-Interpolate each series in `Y`, in turn, by replacing missing observations with the sample average of the non-missing values.
+Interpolate each series in `X`, in turn, by replacing missing observations with the sample average of the non-missing values.
 
 # Arguments
-- `Y`: observed measurements (`nxT`)
+- `X`: observed measurements (`nxT`)
 - `n` and `T` are the number of series and observations
 
-    interpolate(Y::Array{Float64}, n::Int64, T::Int64)
-
-Return Y.
+    interpolate(X::Array{Float64}, n::Int64, T::Int64)
 
 # Arguments
-- `Y`: observed measurements (`nxT`)
+- `X`: observed measurements (`nxT`)
 - `n` and `T` are the number of series and observations
 """
-function interpolate(Y::JArray{Float64}, n::Int64, T::Int64)
-    data = copy(Y);
+function interpolate(X::JArray{Float64}, n::Int64, T::Int64)
+    data = copy(X);
     for i=1:n
-        data[i, ismissing.(Y[i, :])] .= mean_skipmissing(Y[i, :]);
+        data[i, ismissing.(X[i, :])] .= mean_skipmissing(X[i, :]);
     end
     data = convert(Array{Float64}, data);
     return data;
 end
 
-interpolate(Y::Array{Float64}, n::Int64, T::Int64) = Y;
+interpolate(X::Array{Float64}, n::Int64, T::Int64) = X;
 
 """
     lag(X::Array, p::Int64)
