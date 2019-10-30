@@ -3,6 +3,7 @@ __precompile__()
 module TSAnalysis
 
     # Libraries
+    using Distributed;
     using Dates, Logging;
     using LinearAlgebra, Distributions, Statistics;
 
