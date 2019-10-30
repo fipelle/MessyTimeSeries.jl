@@ -1,7 +1,7 @@
 # TSAnalysis.jl
 TSAnalysis.jl includes basic tools for time series analysis and state-space modelling. 
 
-The implementation for the Kalman filter and smoother uses symmetric matrices (via LinearAlgebra.jl). This is particularly beneficial for the stability and speed of estimation algorithms (e.g., the EM algorithm in Shumway and Stoffer, 1982), and high-dimensional forecasting problems. 
+The implementation for the Kalman filter and smoother uses symmetric matrices (via LinearAlgebra.jl). This is particularly beneficial for the stability and speed of estimation algorithms (e.g., the EM algorithm in Shumway and Stoffer, 1982), and to handle high-dimensional forecasting problems. 
 
 
 ##### Bibliography
