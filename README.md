@@ -165,7 +165,7 @@ function fmin(θ_unbound, Y; s::Int64=12)
 end
 
 # Use Optim to find the optimal parameters
-θ_bound = exp.(optimize(x->fmin(x, Y), 1e-4*ones(4), BFGS()).minimizer);
+θ_bound = exp.(optimize(θ->fmin(θ, Y), 1e-4*ones(4), BFGS()).minimizer);
 ```
 
 More options for the optimisation can be found at https://github.com/JuliaNLSolvers/Optim.jl. 
