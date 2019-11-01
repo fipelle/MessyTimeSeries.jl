@@ -132,7 +132,7 @@ This package does not provide direct support to estimate the state-space paramet
 function fmin(θ_unbound, Y; s::Int64=12)
 
     # θ_unbound includes the variances for the innovations of noise, trend, drift and seasonal components
-    θ_bound = exp.(θ_unbound);
+    θ_bound = 1e-8 .+ exp.(θ_unbound);
 
     # Initialise the Kalman filter and smoother status
     kstatus = KalmanStatus();
@@ -164,8 +164,7 @@ function fmin(θ_unbound, Y; s::Int64=12)
     return -kstatus.loglik;
 end
 
-# Use Optim to find the optimal parameters
-θ_bound = exp.(optimize(θ->fmin(θ, Y), 1e-4*ones(4), BFGS()).minimizer);
+θ_bound = 1e-8 .+ exp.(optimize(x->fmin(x, Y), zeros(4), SimulatedAnnealing()).minimizer);
 ```
 
 More options for the optimisation can be found at https://github.com/JuliaNLSolvers/Optim.jl. 
