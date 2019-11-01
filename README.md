@@ -128,7 +128,7 @@ history_Xs, history_Ps, X0s, P0s = ksmoother(ksettings, kstatus);
 This package does not provide direct support to estimate the state-space parameters. However, the estimation can be performed using ```TSAnalysis``` and ```Optim``` jointly. 
 
 #### Local linear trend + seasonal + noise decomposition
-```
+```julia
 function fmin(θ_unbound, Y; s::Int64=12)
 
     # θ_unbound includes the variances for the innovations of noise, trend, drift and seasonal components
