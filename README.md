@@ -92,10 +92,10 @@ trend_llts = hcat(kstatus.history_X_post...)[1,:];
 ```
 
 ### Kalman filter (prediction)
-```TSAnalysis``` allows to compute *h*-steps ahead predictions (at any point in time) without resetting the Kalman filter. 
+```TSAnalysis``` allows to compute *h*-step ahead predictions (at any point in time) without resetting the Kalman filter. 
 
 #### Local linear trend + seasonal + noise decomposition
-In order to compute the 12-steps ahead prediction the block
+In order to compute the 12-step ahead prediction the block
 ```julia
 # Filter for t = 1, ..., T (the output is dynamically stored into kstatus)
 for t=1:size(Y,1)
@@ -117,7 +117,7 @@ end
 ### Kalman smoother
 At any point in time, the Kalman smoother can be executed via
 ```julia
-ksmoother(ksettings, kstatus);
+history_Xs, history_Ps, X0s, P0s = ksmoother(ksettings, kstatus);
 ```
 
 ## Bibliography
