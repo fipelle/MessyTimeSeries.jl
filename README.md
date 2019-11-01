@@ -9,11 +9,12 @@ Pkg.add("TSAnalysis")
 The implementation for the Kalman filter and smoother uses symmetric matrices (via ```LinearAlgebra```). This is particularly beneficial for the stability and speed of estimation algorithms (e.g., the EM algorithm in Shumway and Stoffer, 1982), and to handle high-dimensional forecasting problems.
 
 ## Examples
-For these examples, I will use economic data from FRED (https://fred.stlouisfed.org/), which is available in the ```FredData``` package. Instead, the charts are produced using ```Plots```. These packages can be added via:
+For these examples, I used economic data from FRED (https://fred.stlouisfed.org/), which is available in the ```FredData``` package. The ```Optim``` and ```Plots``` are also used in the examples. These packages can be added via:
 
 ```julia
 import Pkg;
 Pkg.add("FredData");
+Pkg.add("Optim");
 Pkg.add("Plots");
 ```
 
@@ -30,9 +31,12 @@ fred_df = get_data(f, "IPGMFN", observation_start="1984-01-01", units="log");
 Y = fred_df.data.value;
 ```
 
-Make sure that your FRED API is accessible to ```FredData``` (as in https://github.com/micahjsmith/FredData.jl). Hence, load ```LinearAlgebra```, ```Plots``` and ```TSAnalysis``` via
+Make sure that your FRED API is accessible to ```FredData``` (as in https://github.com/micahjsmith/FredData.jl). 
+
+To run the examples below all the following packages must be loaded
 ```julia
 using LinearAlgebra;
+using Optim;
 using Plots;
 using TSAnalysis;
 ```
@@ -77,7 +81,7 @@ V = Symmetric(cat(dims=[1,2], [1e-4 0.0; 0.0 1e-4], 1e-4*Matrix(I,12,12)));
 
 # Initial conditions
 X0 = zeros(14);
-P0 = Symmetric(cat(dims=[1,2], 1e3*Matrix(I,2,2), zeros(12,12)));
+P0 = Symmetric(cat(dims=[1,2], 1e3*Matrix(I,2,2), 1e-4*Matrix(I,12,12)));
 
 # Settings
 ksettings = ImmutableKalmanSettings(permutedims(Y), B, R, C, V, X0, P0);
@@ -95,7 +99,7 @@ trend_llts = hcat(kstatus.history_X_post...)[1,:];
 ```TSAnalysis``` allows to compute *h*-step ahead predictions (at any point in time) without resetting the Kalman filter. 
 
 #### Local linear trend + seasonal + noise decomposition
-In order to compute the 12-step ahead prediction the block
+An easy way to compute the 12-step ahead prediction is to edit the block
 ```julia
 # Filter for t = 1, ..., T (the output is dynamically stored into kstatus)
 for t=1:size(Y,1)
@@ -103,7 +107,7 @@ for t=1:size(Y,1)
 end
 ```
 
-must be edited into
+into
 ```julia
 forecast_history = Array{Array{Float64,1},1}();
 
@@ -119,6 +123,52 @@ At any point in time, the Kalman smoother can be executed via
 ```julia
 history_Xs, history_Ps, X0s, P0s = ksmoother(ksettings, kstatus);
 ```
+
+### Estimation of the state-space parameters
+This package does not provide direct support to estimate the state-space parameters. However, the estimation can be performed using ```TSAnalysis``` and ```Optim``` jointly. 
+
+#### Local linear trend + seasonal + noise decomposition
+```
+function fmin(θ_unbound, Y; s::Int64=12)
+
+    # θ_unbound includes the variances for the innovations of noise, trend, drift and seasonal components
+    θ_bound = exp.(θ_unbound);
+
+    # Initialise the Kalman filter and smoother status
+    kstatus = KalmanStatus();
+
+    # Specify the state-space structure
+
+    s_half = Int64(s/2);
+
+    # Observation equation
+    B = hcat([1.0 0.0], [[1.0 0.0] for j=1:s_half]...);
+    R = Symmetric(ones(1,1)*θ_bound[1]);
+
+    # Transition equation
+    C = cat(dims=[1,2], [1.0 1.0; 0.0 1.0], [[cos(2*pi*j/s) sin(2*pi*j/s); -sin(2*pi*j/s) cos(2*pi*j/s)] for j=1:s_half]...);
+    V = Symmetric(cat(dims=[1,2], [θ_bound[2] 0.0; 0.0 θ_bound[3]], θ_bound[4]*Matrix(I,s,s)));
+
+    # Initial conditions
+    X0 = zeros(2+s);
+    P0 = Symmetric(cat(dims=[1,2], 1e3*Matrix(I,2,2), θ_bound[4]*Matrix(I,s,s)));
+
+    # Settings
+    ksettings = ImmutableKalmanSettings(permutedims(Y), B, R, C, V, X0, P0);
+
+    # Filter for t = 1, ..., T (the output is dynamically stored into kstatus)
+    for t=1:size(Y,1)
+        kfilter!(ksettings, kstatus);
+    end
+
+    return -kstatus.loglik;
+end
+
+# Use Optim to find the optimal parameters
+θ_bound = exp.(optimize(x->fmin(x, Y), 1e-4*ones(4), BFGS()).minimizer);
+```
+
+More options for the optimisation can be found at https://github.com/JuliaNLSolvers/Optim.jl. 
 
 ## Bibliography
 * R. H. Shumway and D. S. Stoffer. An approach to time series smoothing and forecasting using the EM algorithm. Journal of time series analysis, 3(4):253–264, 1982.
