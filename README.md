@@ -9,7 +9,7 @@ Pkg.add("TSAnalysis")
 The implementation for the Kalman filter and smoother uses symmetric matrices (via ```LinearAlgebra```). This is particularly beneficial for the stability and speed of estimation algorithms (e.g., the EM algorithm in Shumway and Stoffer, 1982), and to handle high-dimensional forecasting problems.
 
 ## Examples
-For these examples, I used economic data from FRED (https://fred.stlouisfed.org/), which is available in the ```FredData``` package. The ```Optim``` and ```Plots``` are also used in the examples. These packages can be added via:
+For these examples, I used economic data from FRED (https://fred.stlouisfed.org/), which is available in the ```FredData``` package. ```Optim``` and ```Plots``` are also used in the examples. These packages can be added via:
 
 ```julia
 import Pkg;
@@ -129,10 +129,7 @@ This package does not provide direct support to estimate the state-space paramet
 
 #### Local linear trend + seasonal + noise decomposition
 ```julia
-function fmin(θ_unbound, Y; s::Int64=12)
-
-    # θ_unbound includes the variances for the innovations of noise, trend, drift and seasonal components
-    θ_bound = 1e-8 .+ exp.(θ_unbound);
+function uc_model(θ_bound, Y, s)
 
     # Initialise the Kalman filter and smoother status
     kstatus = KalmanStatus();
@@ -151,7 +148,7 @@ function fmin(θ_unbound, Y; s::Int64=12)
 
     # Initial conditions
     X0 = zeros(2+s);
-    P0 = Symmetric(cat(dims=[1,2], 1e3*Matrix(I,2,2), 1e3*Matrix(I,s,s)));
+    P0 = Symmetric(cat(dims=[1,2], 1e3*Matrix(I,2+s,2+s)));
 
     # Settings
     ksettings = ImmutableKalmanSettings(permutedims(Y), B, R, C, V, X0, P0);
@@ -161,6 +158,18 @@ function fmin(θ_unbound, Y; s::Int64=12)
         kfilter!(ksettings, kstatus);
     end
 
+    return ksettings, kstatus;
+end
+
+function fmin(θ_unbound, Y; s::Int64=12)
+
+    # θ_unbound includes the variances for the innovations of noise, trend, drift and seasonal components
+    θ_bound = 1e-8 .+ exp.(θ_unbound);
+
+    # Compute loglikelihood
+    ksettings, kstatus = uc_model(θ_bound, Y, s)
+
+    # Return -loglikelihood
     return -kstatus.loglik;
 end
 
@@ -168,6 +177,33 @@ end
 ```
 
 More options for the optimisation can be found at https://github.com/JuliaNLSolvers/Optim.jl. 
+
+The results of the estimation can be visualised using ```Plots```.
+```julia
+# Kalman smoother estimates
+ksettings, kstatus = uc_model(θ_bound, Y, 12);
+history_Xs, history_Ps, X0s, P0s = ksmoother(ksettings, kstatus);
+
+# Plots backend
+plotlyjs();
+
+# Data vs trend
+p1 = plot(fred_df.data.date, Y, label="Data", color=RGB(185/255,185/255,185/255),
+          xtickfont=font(8, "Helvetica Neue"), ytickfont=font(8, "Helvetica Neue"),
+          framestyle=:box, legend=:right, size=(800,250), dpi=300)
+
+plot!(fred_df.data.date, hcat(history_Xs...)[1,:], label="Trend", color=RGB(0,0,200/255))
+```
+<img src="./img/p1.svg">
+
+and
+```julia
+# Slope (of the trend)
+p2 = plot(fred_df.data.date, hcat(history_Xs...)[2,:], label="Slope", color=RGB(0,0,200/255),
+          xtickfont=font(8, "Helvetica Neue"), ytickfont=font(8, "Helvetica Neue"),
+          framestyle=:box, legend=:right, size=(800,250), dpi=300)
+```
+<img src="./img/p2.svg">
 
 ## Bibliography
 * R. H. Shumway and D. S. Stoffer. An approach to time series smoothing and forecasting using the EM algorithm. Journal of time series analysis, 3(4):253–264, 1982.
