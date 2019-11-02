@@ -151,7 +151,7 @@ function fmin(θ_unbound, Y; s::Int64=12)
 
     # Initial conditions
     X0 = zeros(2+s);
-    P0 = Symmetric(cat(dims=[1,2], 1e3*Matrix(I,2,2), θ_bound[4]*Matrix(I,s,s)));
+    P0 = Symmetric(cat(dims=[1,2], 1e3*Matrix(I,2,2), 1e3*Matrix(I,s,s)));
 
     # Settings
     ksettings = ImmutableKalmanSettings(permutedims(Y), B, R, C, V, X0, P0);
