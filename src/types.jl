@@ -1,12 +1,17 @@
 # Aliases (types)
 const FloatVector  = Array{Float64,1};
+const FloatMatrix  = Array{Float64,2};
 const FloatArray   = Array{Float64};
 const SymMatrix    = Symmetric{Float64,Array{Float64,2}};
 const DiagMatrix   = Diagonal{Float64,Array{Float64,1}};
 const JVector{T}   = Array{Union{Missing, T}, 1};
 const JArray{T, N} = Array{Union{Missing, T}, N};
 
-# Kalman structures
+#=
+--------------------------------------------------------------------------------------------------------------------------------
+Kalman structures
+--------------------------------------------------------------------------------------------------------------------------------
+=#
 
 abstract type KalmanSettings end
 
@@ -25,7 +30,7 @@ The state space model used below is,
 Where ``e_{t} ~ N(0, R)`` and ``v_{t} ~ N(0, V)``.
 
 # Arguments
-- `Y`: observed measurements (`nxT`)
+- `Y`: Observed measurements (`nxT`)
 - `B`: Measurement equations' coefficients
 - `R`: Covariance matrix of the measurement equations' error terms
 - `C`: Transition equations' coefficients
@@ -39,7 +44,7 @@ Where ``e_{t} ~ N(0, R)`` and ``v_{t} ~ N(0, V)``.
 - `store_history`: Boolean (true to store the history of the filter and smoother)
 """
 struct ImmutableKalmanSettings <: KalmanSettings
-    Y::Union{FloatArray, JArray{Float64}}
+    Y::Union{FloatMatrix, JArray{Float64,2}}
     B::FloatArray
     R::SymMatrix
     C::FloatArray
@@ -54,7 +59,7 @@ struct ImmutableKalmanSettings <: KalmanSettings
 end
 
 # ImmutableKalmanSettings constructor
-function ImmutableKalmanSettings(Y::Union{FloatArray, JArray{Float64}}, B::FloatArray, R::SymMatrix, C::FloatArray, V::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
+function ImmutableKalmanSettings(Y::Union{FloatMatrix, JArray{Float64,2}}, B::FloatArray, R::SymMatrix, C::FloatArray, V::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
 
     # Compute default value for missing parameters
     n, T = size(Y);
@@ -67,7 +72,7 @@ function ImmutableKalmanSettings(Y::Union{FloatArray, JArray{Float64}}, B::Float
 end
 
 # ImmutableKalmanSettings constructor
-function ImmutableKalmanSettings(Y::Union{FloatArray, JArray{Float64}}, B::FloatArray, R::SymMatrix, C::FloatArray, V::SymMatrix, X0::FloatVector, P0::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
+function ImmutableKalmanSettings(Y::Union{FloatMatrix, JArray{Float64,2}}, B::FloatArray, R::SymMatrix, C::FloatArray, V::SymMatrix, X0::FloatVector, P0::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
 
     # Compute default value for missing parameters
     n, T = size(Y);
@@ -85,7 +90,7 @@ Define a mutable structure identical in shape to ImmutableKalmanSettings.
 See the docstring of ImmutableKalmanSettings for more information.
 """
 mutable struct MutableKalmanSettings <: KalmanSettings
-    Y::Union{FloatArray, JArray{Float64}}
+    Y::Union{FloatMatrix, JArray{Float64,2}}
     B::FloatArray
     R::SymMatrix
     C::FloatArray
@@ -100,7 +105,7 @@ mutable struct MutableKalmanSettings <: KalmanSettings
 end
 
 # MutableKalmanSettings constructor
-function MutableKalmanSettings(Y::Union{FloatArray, JArray{Float64}}, B::FloatArray, R::SymMatrix, C::FloatArray, V::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
+function MutableKalmanSettings(Y::Union{FloatMatrix, JArray{Float64,2}}, B::FloatArray, R::SymMatrix, C::FloatArray, V::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
 
     # Compute default value for missing parameters
     n, T = size(Y);
@@ -113,7 +118,7 @@ function MutableKalmanSettings(Y::Union{FloatArray, JArray{Float64}}, B::FloatAr
 end
 
 # MutableKalmanSettings constructor
-function MutableKalmanSettings(Y::Union{FloatArray, JArray{Float64}}, B::FloatArray, R::SymMatrix, C::FloatArray, V::SymMatrix, X0::FloatVector, P0::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
+function MutableKalmanSettings(Y::Union{FloatMatrix, JArray{Float64,2}}, B::FloatArray, R::SymMatrix, C::FloatArray, V::SymMatrix, X0::FloatVector, P0::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
 
     # Compute default value for missing parameters
     n, T = size(Y);
@@ -126,7 +131,7 @@ end
 """
     KalmanStatus(...)
 
-Define an mutable structure to manage the status of the Kalman filter and smoother.
+Define a mutable structure to manage the status of the Kalman filter and smoother.
 
 # Arguments
 - `t`: Current point in time
@@ -155,3 +160,32 @@ end
 
 # KalmanStatus constructors
 KalmanStatus() = KalmanStatus(0, [nothing for i=1:9]...);
+
+
+#=
+--------------------------------------------------------------------------------------------------------------------------------
+UC models: structures
+--------------------------------------------------------------------------------------------------------------------------------
+=#
+
+abstract type UCSettings end
+
+"""
+    ARIMASettings(...)
+
+Define an immutable structure to manage ARIMA specifications.
+
+# Arguments
+- `Y`: Observed measurements (`nxT`)
+- `Z`: Observed measurements (`nxT`) - differenced and demeaned
+- `d`: Degree of differencing
+- `p`: Order of the autoregressive model
+- `q`: Order of the moving average model
+"""
+struct ARIMASettings <: UCSettings
+    Y::Union{FloatMatrix, JArray{Float64,2}}
+    Z::Union{FloatMatrix, JArray{Float64,2}}
+    d::Int64
+    p::Int64
+    q::Int64
+end
