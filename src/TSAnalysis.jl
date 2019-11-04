@@ -3,9 +3,8 @@ __precompile__()
 module TSAnalysis
 
     # Libraries
-    using Distributed;
-    using Dates, Logging;
-    using LinearAlgebra, Distributions, Statistics;
+    using Dates, Distributed, Logging;
+    using LinearAlgebra, Distributions, Optim, Statistics;
 
     # Custom dependencies
     const local_path = dirname(@__FILE__);

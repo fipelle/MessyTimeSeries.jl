@@ -136,12 +136,12 @@ Transformations
 =#
 
 """
-    demean(X::Array{Float64,1})
+    demean(X::FloatVector)
     demean(X::JVector)
 
 Demean data.
 
-    demean(X::Array{Float64,2})
+    demean(X::FloatMatrix)
     demean(X::JArray)
 
 Demean data.
@@ -162,8 +162,8 @@ julia> demean([1.0 3.5 1.5 4.0 2.0; 4.5 2.5 5.0 3.0 5.5])
   0.4  -1.6   0.9  -1.1   1.4
 ```
 """
-demean(X::Array{Float64,1}) = X .- mean(X);
-demean(X::Array{Float64,2}) = X .- mean(X,dims=2);
+demean(X::FloatVector) = X .- mean(X);
+demean(X::FloatMatrix) = X .- mean(X,dims=2);
 demean(X::JVector) = X .- mean_skipmissing(X);
 demean(X::JArray) = X .- mean_skipmissing(X);
 

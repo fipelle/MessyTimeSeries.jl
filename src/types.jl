@@ -45,9 +45,9 @@ Where ``e_{t} ~ N(0, R)`` and ``v_{t} ~ N(0, V)``.
 """
 struct ImmutableKalmanSettings <: KalmanSettings
     Y::Union{FloatMatrix, JArray{Float64,2}}
-    B::FloatArray
+    B::FloatMatrix
     R::SymMatrix
-    C::FloatArray
+    C::FloatMatrix
     V::SymMatrix
     X0::FloatVector
     P0::SymMatrix
@@ -59,7 +59,7 @@ struct ImmutableKalmanSettings <: KalmanSettings
 end
 
 # ImmutableKalmanSettings constructor
-function ImmutableKalmanSettings(Y::Union{FloatMatrix, JArray{Float64,2}}, B::FloatArray, R::SymMatrix, C::FloatArray, V::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
+function ImmutableKalmanSettings(Y::Union{FloatMatrix, JArray{Float64,2}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, V::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
 
     # Compute default value for missing parameters
     n, T = size(Y);
@@ -72,7 +72,7 @@ function ImmutableKalmanSettings(Y::Union{FloatMatrix, JArray{Float64,2}}, B::Fl
 end
 
 # ImmutableKalmanSettings constructor
-function ImmutableKalmanSettings(Y::Union{FloatMatrix, JArray{Float64,2}}, B::FloatArray, R::SymMatrix, C::FloatArray, V::SymMatrix, X0::FloatVector, P0::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
+function ImmutableKalmanSettings(Y::Union{FloatMatrix, JArray{Float64,2}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, V::SymMatrix, X0::FloatVector, P0::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
 
     # Compute default value for missing parameters
     n, T = size(Y);
@@ -91,9 +91,9 @@ See the docstring of ImmutableKalmanSettings for more information.
 """
 mutable struct MutableKalmanSettings <: KalmanSettings
     Y::Union{FloatMatrix, JArray{Float64,2}}
-    B::FloatArray
+    B::FloatMatrix
     R::SymMatrix
-    C::FloatArray
+    C::FloatMatrix
     V::SymMatrix
     X0::FloatVector
     P0::SymMatrix
@@ -105,7 +105,7 @@ mutable struct MutableKalmanSettings <: KalmanSettings
 end
 
 # MutableKalmanSettings constructor
-function MutableKalmanSettings(Y::Union{FloatMatrix, JArray{Float64,2}}, B::FloatArray, R::SymMatrix, C::FloatArray, V::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
+function MutableKalmanSettings(Y::Union{FloatMatrix, JArray{Float64,2}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, V::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
 
     # Compute default value for missing parameters
     n, T = size(Y);
@@ -118,7 +118,7 @@ function MutableKalmanSettings(Y::Union{FloatMatrix, JArray{Float64,2}}, B::Floa
 end
 
 # MutableKalmanSettings constructor
-function MutableKalmanSettings(Y::Union{FloatMatrix, JArray{Float64,2}}, B::FloatArray, R::SymMatrix, C::FloatArray, V::SymMatrix, X0::FloatVector, P0::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
+function MutableKalmanSettings(Y::Union{FloatMatrix, JArray{Float64,2}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, V::SymMatrix, X0::FloatVector, P0::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
 
     # Compute default value for missing parameters
     n, T = size(Y);
