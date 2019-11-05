@@ -185,7 +185,27 @@ Define an immutable structure to manage ARIMA specifications.
 struct ARIMASettings <: UCSettings
     Y::Union{FloatMatrix, JArray{Float64,2}}
     Z::Union{FloatMatrix, JArray{Float64,2}}
+    r::Int64
     d::Int64
     p::Int64
     q::Int64
+end
+
+# ARIMASettings constructor
+function ARIMASettings(Y::Union{FloatMatrix, JArray{Float64,2}}, d::Int64, p::Int64, q::Int64)
+
+    # Differenciate data
+    Z = copy(Y);
+
+    if d > 0
+        for i=1:d
+            Z = diff(Z, dims=2);
+        end
+    end
+
+    # Demean data
+    Z = demean(Z);
+
+    # ARIMASettings
+    return ARIMASettings(Y, Z, max(p, q+1), d, p, q);
 end

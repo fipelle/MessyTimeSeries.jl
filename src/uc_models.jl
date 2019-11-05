@@ -12,7 +12,7 @@ function fmin_uc_models(θ::FloatVector, model_structure::Function, settings::UC
 
     # Kalman status and settings
     kstatus = KalmanStatus();
-    ksettings = model_structure(θ, settings);
+    ksettings = ImmutableKalmanSettings(model_structure(θ, settings)...);
 
     # Compute loglikelihood for t = 1, ..., T
     for t=1:size(ksettings.Y,2)
@@ -40,23 +40,16 @@ ARMA(p,q) representation as in Hamilton (1994).
 """
 function arma_structure(θ::FloatVector, settings::ARIMASettings)
 
-    # Data is assumed to be demeaned
-    check_bounds(mean_skipmissing(settings.Y), 0, 1e-8);
-
-    # Dimensions
-    # TODO: add in ARIMASettings
-    # r = max(settings.p, settings.q+1);
-
     # Observation equation
     B = [1 permutedims(θ[1:settings.r-1])];
-    R = ones(1,1)*1e-8;
+    R = Symmetric(ones(1,1)*1e-8);
 
     # Transition equation
     C = [permutedims(θ[settings.r:2*settings.r-1]); Matrix(I, settings.r-1, settings.r-1) zeros(settings.r-1)];
-    V = cat(dims=[1,2], θ[2*settings.r], zeros(settings.r-1, settings.r-1));
+    V = Symmetric(cat(dims=[1,2], θ[2*settings.r], zeros(settings.r-1, settings.r-1)));
 
     # Return state-space structure
-    return B, R, C, V;
+    return settings.Z, B, R, C, V;
 end
 
 """
@@ -77,34 +70,25 @@ Return KalmanSettings for an arima(d,p,q) model with parameters θ.
 """
 function arima(settings::ARIMASettings; rt::Float64=0.95, f_tol::Float64=1e-3, x_tol::Float64=1e-3, max_iter::Int64=10^5)
 
-    # Differenciate data
-    Z = copy(settings.Y);
-    for i=1:d
-        Z = diff(Z);
-    end
-
-    # Demean data
-    Z = mean_skipmissing(Z);
-
     # Optim options
     optim_opts = Optim.Options(iterations=max_iter, show_trace=true, show_every=100);
 
     # Starting point
-    θ_starting = zeros(2*settings.r);
+    θ_starting = 1e-8*ones(2*settings.r);
 
     # Bounds
-    θ_lower = [-100*ones(2*settings.r-1); 1e-8*ones(1)];
-    θ_upper = [100*ones(2*settings.r-1);  100*ones(1)];
+    θ_lower = [-0.9*ones(2*settings.r-1); 1e-8*ones(1)];
+    θ_upper = [0.9*ones(2*settings.r-1);  100*ones(1)];
 
     # Estimate the model
-    # TODO: pass Z instead of Y (in settings)
     # TODO: control non-stationary case
     res = Optim.optimize(θ->fmin_uc_models(θ, arma_structure, settings), θ_lower, θ_upper, θ_starting, SAMIN(rt=rt, f_tol=f_tol, x_tol=x_tol), optim_opts);
 
     # Return output
+    # TODO: add ad-hoc ImmutableKalmanSettings
     return arima(res.minimizer, settings);
 end
 
 function arima(θ::FloatVector, settings::ARIMASettings)
-    return ImmutableKalmanSettings(settings.Z, arma_structure(θ, settings)...);
+    return ImmutableKalmanSettings(arma_structure(θ, settings)...);
 end
