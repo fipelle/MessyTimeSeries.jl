@@ -183,11 +183,11 @@ end
 """
     kforecast(settings::KalmanSettings, X::Union{FloatVector, Nothing}, h::Int64)
 
-Forecast X up to h-steps ahead.
+Forecast X up to h-step ahead.
 
     kforecast(settings::KalmanSettings, X::Union{FloatVector, Nothing}, P::Union{SymMatrix, Nothing}, h::Int64)
 
-Forecast X and P up to h-steps ahead.
+Forecast X and P up to h-step ahead.
 
 # Model
 The state space model used below is,
