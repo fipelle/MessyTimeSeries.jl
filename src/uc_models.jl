@@ -88,7 +88,7 @@ ARIMA model
 ARMA(p,q) representation as in Hamilton (1994).
 
 # Arguments
-- `θ`: Model parameters (real eigenvalues + variance of the innovation)
+- `θ`: Model parameters (eigenvalues + variance of the innovation)
 - `settings`: ARIMASettings struct
 """
 function arma_structure(θ::FloatVector, settings::ARIMASettings)
@@ -130,7 +130,7 @@ Estimate arima(d,p,q) model.
 Return KalmanSettings for an arima(d,p,q) model with parameters θ.
 
 # Arguments
-- `θ`: Model parameters (real eigenvalues + variance of the innovation)
+- `θ`: Model parameters (eigenvalues + variance of the innovation)
 - `settings`: ARIMASettings struct
 """
 function arima(settings::ARIMASettings; f_tol::Float64=1e-4, x_tol::Float64=1e-4, max_iter::Int64=10^5, verb::Bool=true)
