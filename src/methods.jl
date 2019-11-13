@@ -164,7 +164,7 @@ function eigvals_to_coeff(λ::FloatVector; k::Int64=1)
         if n == 1
             return permutedim(V[1,:])*D*inv(V);
         else
-            return V[1:n,:]*D*inv(V);
+            return V[1:k,:]*D*inv(V);
         end
 
     catch err
