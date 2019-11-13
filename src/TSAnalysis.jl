@@ -22,5 +22,5 @@ module TSAnalysis
             mean_skipmissing, std_skipmissing, is_vector_in_matrix, demean, lag, companion_form;
 
     # Export functions
-    export kfilter!, kforecast, ksmoother, arima, forecast;
+    export kfilter!, kforecast, ksmoother, fmin_uc_models, arima, forecast;
 end

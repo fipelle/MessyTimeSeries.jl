@@ -48,7 +48,7 @@ end
 Compute the h-step ahead forecast for the data included in settings.
 
 # Arguments
-- `KalmanSettings`: KalmanSettings struct
+- `settings`: KalmanSettings struct
 - `h`: Forecast horizon
 
     forecast(settings::KalmanSettings, X::FloatVector, h::Int64)
@@ -56,7 +56,7 @@ Compute the h-step ahead forecast for the data included in settings.
 Compute the h-step ahead forecast for the data included in settings, starting from X.
 
 # Arguments
-- `KalmanSettings`: KalmanSettings struct
+- `settings`: KalmanSettings struct
 - `X`: Last known value of the latent states
 - `h`: Forecast horizon
 """
@@ -148,6 +148,7 @@ function arima(settings::ARIMASettings; f_tol::Float64=1e-4, x_tol::Float64=1e-4
 
     # Estimate the model
     # TODO: debug arima and transf functions
+    # TODO: add more flexibility on the Optim options
     res = Optim.optimize(θ_unbound->fmin_uc_models(θ_unbound, lb, ub, transform_id, arma_structure, settings), θ_starting, NelderMead(), optim_opts);
 
     # Apply bounds
@@ -181,7 +182,7 @@ function arima(θ::FloatVector, settings::ARIMASettings)
         @warn("Causality is not properly enforced! \n Re-estimate the model increasing the degree of differencing.");
     end
 
-    # Parameter redundancy
+    # Warning 3: parameter redundancy
     intersection_ar_ma = intersect(eigval_ar, eigval_ma);
     if length(intersection_ar_ma) > 0
         @warn("Parameter redundancy! \n Check the AR and MA polynomials.");
@@ -192,26 +193,57 @@ function arima(θ::FloatVector, settings::ARIMASettings)
 end
 
 """
+    forecast(settings::KalmanSettings, h::Int64, arima_settings::ARIMASettings)
+
+Compute the h-step ahead forecast for the data included in settings (in the arima_settings.Y_levels scale)
+
+# Arguments
+- `settings`: KalmanSettings struct
+- `h`: Forecast horizon
+- `arima_settings`: ARIMASettings struct
 """
 function forecast(settings::KalmanSettings, h::Int64, arima_settings::ARIMASettings)
 
-    # TODO: finish writing this function
+    # TODO: speed up (it can be improved)
+    # TODO: I also need to sum the sample average of the data in (1-L)^d to the unadjusted forecast
 
     # Compute forecast for the de-meaned data in settings.Y
     forecast_Y = forecast(settings, h);
 
+    # Initialise adjustment factor
+    adj_factor = arima_settings.μ * ones(1,h);
+
     # Compute adjustment factor
-    adj_factor = zeros(1,h);
-    Y_i = copy(arima_settings.Y_levels);
     if arima_settings.d > 0
-        for i=1:d
-            Y_i = diff(Y_i, dims=2);
-            adj_factor[1] += Y_i[end];
+
+        # Initialise Y_all
+        Y_all = zeros(arima_settings.d, arima_settings.d);
+
+        # The first row of Y_all is the data in levels
+        Y_all[1,:] = arima_settings.Y_levels[1, end-arima_settings.d+1:end];
+
+        # Differenced data, ex. (1-L)^d * Y_levels
+        for i=1:arima_settings.d-1
+            Y_all[1+i,:] = [NaN * ones(1,i) diff(permutedims(Y_all[i,:]), dims=2)];
+        end
+
+        # Cut Y_all
+        Y_all = Y_all[:,end];
+
+        for hz=1:h
+
+            # Update adjustment factor
+            adj_factor[1,hz] += sum(forecast_Y[1,hz] .+ Y_all);
+
+            # Update Y_all
+            Y_all[end] += forecast_Y[1,hz];
+
+            for i=1:arima_settings.d-1
+                Y_all[end-i] += Y_all[end-i+1];
+            end
         end
     end
 
-    adj_factor[1] += mean_skipmissing(Y_i)[1];
-
     # Return forecast
-    return adj_factor[1] .+ forecast_Y;
+    return adj_factor .+ forecast_Y;
 end

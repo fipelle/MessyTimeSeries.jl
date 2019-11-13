@@ -185,6 +185,7 @@ Define an immutable structure to manage ARIMA specifications.
 struct ARIMASettings <: UCSettings
     Y_levels::Union{FloatMatrix, JArray{Float64,2}}
     Y::Union{FloatMatrix, JArray{Float64,2}}
+    μ::Float64
     r::Int64
     d::Int64
     p::Int64
@@ -203,9 +204,11 @@ function ARIMASettings(Y_levels::Union{FloatMatrix, JArray{Float64,2}}, d::Int64
         end
     end
 
+    μ = mean(Y);
+
     # Demean data
     Y = demean(Y);
 
     # ARIMASettings
-    return ARIMASettings(Y_levels, Y, max(p, q+1), d, p, q);
+    return ARIMASettings(Y_levels, Y, μ, max(p, q+1), d, p, q);
 end

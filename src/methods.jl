@@ -151,7 +151,7 @@ Compute the companion form corresponding to a vector of eigenvalues and returns 
 Note: this approach returns a non-zero vector of coefficients if the elements of λ are unique (distinct eigenvalues).
 
 # Arguments
-- `λ`: Vector of (distinct) eigenvalues
+- `λ`: Vector of eigenvalues
 - `k`: Number of coefficients to retrieve from the companion form matrix (default: 1)
 """
 function eigvals_to_coeff(λ::FloatVector; k::Int64=1)
@@ -164,7 +164,7 @@ function eigvals_to_coeff(λ::FloatVector; k::Int64=1)
         if k == 1
             return permutedims(V[1,:])*Diagonal(λ)*inv(V);
         else
-            return V[1:k,:]*Diagonal(λ)*inv(V); # TODO: this line has not been tested, since there is not yet support for multivariate models
+            return V[1:k,:]*Diagonal(λ)*inv(V); # TODO: this line has not been tested properly, since there is not yet support for multivariate models.
         end
 
     catch err
