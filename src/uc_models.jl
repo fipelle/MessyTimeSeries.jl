@@ -170,18 +170,22 @@ function arima(θ::FloatVector, settings::ARIMASettings)
     output = ImmutableKalmanSettings(arma_structure(θ, settings)...);
 
     # Warning 1: invertibility (in the past)
-    eigval_ma = maximum(abs.(eigvals(companion_form(output.B[2:end]))));
-    if eigval_ma >= 1
+    eigval_ma = eigvals(companion_form(output.B[2:end]));
+    if maximum(abs.(eigval_ma)) >= 1
         @warn("Invertibility (in the past) is not properly enforced! \n Re-estimate the model increasing the degree of differencing.");
     end
 
     # Warning 2: causality
-    eigval_ar = maximum(abs.(eigvals(output.C)));
-    if eigval_ar >= 1
+    eigval_ar = eigvals(output.C);
+    if maximum(abs.(eigval_ar)) >= 1
         @warn("Causality is not properly enforced! \n Re-estimate the model increasing the degree of differencing.");
     end
 
-    # TODO: check for parameter redundancy
+    # Parameter redundancy
+    intersection_ar_ma = intersect(eigval_ar, eigval_ma);
+    if length(intersection_ar_ma) > 0
+        @warn("Parameter redundancy! \n Check the AR and MA polynomials.");
+    end
 
     # Return output
     return output
