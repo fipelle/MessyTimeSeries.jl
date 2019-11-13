@@ -205,7 +205,6 @@ Compute the h-step ahead forecast for the data included in settings (in the arim
 function forecast(settings::KalmanSettings, h::Int64, arima_settings::ARIMASettings)
 
     # TODO: speed up (it can be improved)
-    # TODO: I also need to sum the sample average of the data in (1-L)^d to the unadjusted forecast
 
     # Compute forecast for the de-meaned data in settings.Y
     forecast_Y = forecast(settings, h);
