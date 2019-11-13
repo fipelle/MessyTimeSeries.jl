@@ -161,10 +161,10 @@ function eigvals_to_coeff(λ::FloatVector; k::Int64=1)
         V = square_vandermonde_matrix(λ);
 
         # Return coefficients
-        if n == 1
-            return permutedim(V[1,:])*D*inv(V);
+        if k == 1
+            return permutedims(V[1,:])*Diagonal(λ)*inv(V);
         else
-            return V[1:k,:]*D*inv(V);
+            return V[1:k,:]*Diagonal(λ)*inv(V); # TODO: this line has not been tested, since there is not yet support for multivariate models
         end
 
     catch err
