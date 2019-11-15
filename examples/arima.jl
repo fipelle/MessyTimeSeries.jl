@@ -15,7 +15,7 @@ Y = fred_df.data.value;
 Y=permutedims(Y[13:end]-Y[1:end-12]);
 
 # Settings for ARMA(1,1)
-arima_settings = ARIMASettings(Y, 0, 1, 1)
+arima_settings = ARIMASettings(Y, 0, 1, 1);
 
 # Estimate parameters
-arima_out = arima(arima_settings, NelderMead(), Optim.Options(iterations=10000, f_tol=1e-4, x_tol=1e-4, show_trace=true, show_every=500))
+arima_out = arima(arima_settings, NelderMead(), Optim.Options(iterations=10000, f_tol=1e-4, x_tol=1e-4, show_trace=true, show_every=500));
