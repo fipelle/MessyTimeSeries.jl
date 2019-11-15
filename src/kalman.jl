@@ -236,7 +236,6 @@ function kforecast(settings::KalmanSettings, Xt::Union{FloatVector, Nothing}, Pt
     return history_X, history_P;
 end
 
-
 """
     compute_J1(Pf_lagged::SymMatrix, Pp::SymMatrix, settings::KalmanSettings)
 
