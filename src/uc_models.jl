@@ -114,16 +114,13 @@ function arma_structure(θ::FloatVector, settings::ARIMASettings)
 end
 
 """
-    arima(settings::ARIMASettings; f_tol::Float64=1e-4, x_tol::Float64=1e-4, max_iter::Int64=10^5, verb::Bool=true)
+    arima(settings::ARIMASettings, args...)
 
 Estimate arima(d,p,q) model.
 
 # Arguments
 - `settings`: ARIMASettings struct
-- `f_tol`: Function tolerance (default: 1e-2)
-- `x_tol`: Parameters tolerance (default: 1e-2)
-- `max_iter`: Maximum number of iterations (default: 10^5)
-- `verb`: Verbose output from Optim (default: true)
+- `args`: Arguments for Optim.optimize
 
     arima(θ::FloatVector, settings::ARIMASettings)
 
@@ -133,10 +130,7 @@ Return KalmanSettings for an arima(d,p,q) model with parameters θ.
 - `θ`: Model parameters (eigenvalues + variance of the innovation)
 - `settings`: ARIMASettings struct
 """
-function arima(settings::ARIMASettings; f_tol::Float64=1e-4, x_tol::Float64=1e-4, max_iter::Int64=10^5, verb::Bool=true)
-
-    # Optim options
-    optim_opts = Optim.Options(iterations=max_iter, f_tol=f_tol, x_tol=x_tol, show_trace=verb, show_every=500);
+function arima(settings::ARIMASettings, args...)
 
     # Starting point
     θ_starting = 1e-8*ones(settings.p+settings.q+1);
@@ -147,9 +141,7 @@ function arima(settings::ARIMASettings; f_tol::Float64=1e-4, x_tol::Float64=1e-4
     transform_id = [2*ones(settings.p+settings.q); 1] |> Array{Int64,1};
 
     # Estimate the model
-    # TODO: debug arima and transf functions
-    # TODO: add more flexibility on the Optim options
-    res = Optim.optimize(θ_unbound->fmin_uc_models(θ_unbound, lb, ub, transform_id, arma_structure, settings), θ_starting, NelderMead(), optim_opts);
+    res = Optim.optimize(θ_unbound->fmin_uc_models(θ_unbound, lb, ub, transform_id, arma_structure, settings), θ_starting, args...);
 
     # Apply bounds
     θ_minimizer = copy(res.minimizer);
@@ -204,7 +196,7 @@ Compute the h-step ahead forecast for the data included in settings (in the arim
 """
 function forecast(settings::KalmanSettings, h::Int64, arima_settings::ARIMASettings)
 
-    # TODO: speed up (it can be improved)
+    # TODO: speed up the function
 
     # Compute forecast for the de-meaned data in settings.Y
     forecast_Y = forecast(settings, h);
