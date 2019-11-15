@@ -114,14 +114,6 @@ function arma_structure(θ::FloatVector, settings::ARIMASettings)
 end
 
 """
-    arima(settings::ARIMASettings, args...)
-
-Estimate arima(d,p,q) model.
-
-# Arguments
-- `settings`: ARIMASettings struct
-- `args`: Arguments for Optim.optimize
-
     arima(θ::FloatVector, settings::ARIMASettings)
 
 Return KalmanSettings for an arima(d,p,q) model with parameters θ.
@@ -129,34 +121,15 @@ Return KalmanSettings for an arima(d,p,q) model with parameters θ.
 # Arguments
 - `θ`: Model parameters (eigenvalues + variance of the innovation)
 - `settings`: ARIMASettings struct
+
+    arima(settings::ARIMASettings, args...)
+
+Estimate arima(d,p,q) model.
+
+# Arguments
+- `settings`: ARIMASettings struct
+- `args`: Arguments for Optim.optimize
 """
-function arima(settings::ARIMASettings, args...)
-
-    # Starting point
-    θ_starting = 1e-8*ones(settings.p+settings.q+1);
-
-    # Bounds
-    lb = [-0.99*ones(settings.p+settings.q); 1e-8];
-    ub = [0.99*ones(settings.p+settings.q);  Inf];
-    transform_id = [2*ones(settings.p+settings.q); 1] |> Array{Int64,1};
-
-    # Estimate the model
-    res = Optim.optimize(θ_unbound->fmin_uc_models(θ_unbound, lb, ub, transform_id, arma_structure, settings), θ_starting, args...);
-
-    # Apply bounds
-    θ_minimizer = copy(res.minimizer);
-    for i=1:length(θ_minimizer)
-        if transform_id[i] == 1
-            θ_minimizer[i] = get_bounded_log(θ_minimizer[i], lb[i]);
-        elseif transform_id[i] == 2
-            θ_minimizer[i] = get_bounded_logit(θ_minimizer[i], lb[i], ub[i]);
-        end
-    end
-
-    # Return output
-    return arima(θ_minimizer, settings);
-end
-
 function arima(θ::FloatVector, settings::ARIMASettings)
 
     # Compute state-space parameters
@@ -182,6 +155,33 @@ function arima(θ::FloatVector, settings::ARIMASettings)
 
     # Return output
     return output
+end
+
+function arima(settings::ARIMASettings, args...)
+
+    # Starting point
+    θ_starting = 1e-8*ones(settings.p+settings.q+1);
+
+    # Bounds
+    lb = [-0.99*ones(settings.p+settings.q); 1e-8];
+    ub = [0.99*ones(settings.p+settings.q);  Inf];
+    transform_id = [2*ones(settings.p+settings.q); 1] |> Array{Int64,1};
+
+    # Estimate the model
+    res = Optim.optimize(θ_unbound->fmin_uc_models(θ_unbound, lb, ub, transform_id, arma_structure, settings), θ_starting, args...);
+
+    # Apply bounds
+    θ_minimizer = copy(res.minimizer);
+    for i=1:length(θ_minimizer)
+        if transform_id[i] == 1
+            θ_minimizer[i] = get_bounded_log(θ_minimizer[i], lb[i]);
+        elseif transform_id[i] == 2
+            θ_minimizer[i] = get_bounded_logit(θ_minimizer[i], lb[i], ub[i]);
+        end
+    end
+
+    # Return output
+    return arima(θ_minimizer, settings);
 end
 
 """
