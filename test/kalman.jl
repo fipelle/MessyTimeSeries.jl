@@ -110,22 +110,30 @@ end
     # Ones
     ι = ones(1,1);
 
-    # Correct estimates (initial conditions)
+    # Correct estimates: initial conditions
     benchmark_X0 = [0.0];
     benchmark_P0 = 5.263157*ι;
 
-    # Correct estimates (Kalman filter)
+    # Correct estimates: a priori
     benchmark_X_prior = [[0.00000], [0.314999], [0.557999], [0.502199], [0.451979], [0.998999], [0.899099], [2.483999], [2.456999], [3.104999]];
     benchmark_P_prior = [5.263157*ι, ι, ι, 1.81*ι, 2.4661*ι, ι, 1.81*ι, ι, ι, ι];
-    benchmark_X_post  = [[0.349999], [0.619999], [0.557999], [0.502199], [1.109999], [0.998999], [2.759999], [2.729999], [3.449999], [3.659999]];
-    benchmark_P_post  = [0*ι, 0*ι, ι, 1.81*ι, 0*ι, ι, 0*ι, 0*ι, 0*ι, 0*ι];
-    benchmark_X_fc    = [[0.098850], [0.175106], [0.157595], [0.141836], [0.313496], [0.282147], [0.779505], [0.771032], [0.974381], [1.033692]];
-    benchmark_P_fc    = [[4.843334]*ι, [4.843334]*ι, [4.923100]*ι, [4.987711]*ι, [4.843334]*ι, [4.923100]*ι, [4.843334]*ι, [4.843334]*ι, [4.843334]*ι, [4.843334]*ι];
-    benchmark_loglik  = -3.358198;
 
-    # Correct estimates (Kalman smoother)
+    # Correct estimates: a posteriori
+    benchmark_X_post = [[0.349999], [0.619999], [0.557999], [0.502199], [1.109999], [0.998999], [2.759999], [2.729999], [3.449999], [3.659999]];
+    benchmark_P_post = [0*ι, 0*ι, ι, 1.81*ι, 0*ι, ι, 0*ι, 0*ι, 0*ι, 0*ι];
+
+    # Correct estimates: 12-step ahead forecast
+    benchmark_X_fc = [[0.098850], [0.175106], [0.157595], [0.141836], [0.313496], [0.282147], [0.779505], [0.771032], [0.974381], [1.033692]];
+    benchmark_P_fc = [[4.843334]*ι, [4.843334]*ι, [4.923100]*ι, [4.987711]*ι, [4.843334]*ι, [4.923100]*ι, [4.843334]*ι, [4.843334]*ι, [4.843334]*ι, [4.843334]*ι];
+
+    # Correct estimates: loglikelihood
+    benchmark_loglik = -3.358198;
+
+    # Correct estimates: kalman smoother (smoothed initial conditions)
     benchmark_X0_sm = [0.315];
     benchmark_P0_sm = 1*ι;
+
+    # Correct estimates: kalman smoother
     benchmark_X_sm = [[0.350000], [0.619999], [0.774129], [0.936859], [1.110000], [1.924309], [2.759999], [2.730000], [3.449999], [3.659999]];
     benchmark_P_sm = [0*ι, 0*ι, 0.733952*ι, 0.733952*ι, 0*ι, 0.552486*ι, 0*ι, 0*ι, 0*ι, 0*ι];
 
