@@ -1,4 +1,4 @@
-using Test, TSAnalysis;
+using LinearAlgebra, Test, TSAnalysis;
 
 """
     ksettings_input_test(ksettings::KalmanSettings, Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, V::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
@@ -19,91 +19,98 @@ end
 
     # Initialise data and state-space parameters
     Y = [0.35 0.62 missing 1.00 1.11 1.95 2.76 2.73 3.45 3.66];
-    B = [1.0];
-    R = [1e-8] |> SymMatrix;
-    C = [0.9];
-    V = [1.0] |> SymMatrix;
+    B = ones(1,1);
+    R = Symmetric(1e-8*ones(1,1));
+    C = 0.9*ones(1,1);
+    V = Symmetric(ones(1,1));
 
-    # Tests on ImmutableKalmanSettings
-    ksettings1 = Immutable(Y, B, R, C, V, compute_loglik=true, store_history=true);
-    @test ksettings_input_test(ksettings1, Y, B, R, C, V, compute_loglik=true, store_history=true);
+    # Loop over ImmutableKalmanSettings and MutableKalmanSettings
+    for ksettings_type = [ImmutableKalmanSettings; MutableKalmanSettings]
 
-    ksettings2 = (Y, B, R, C, V, compute_loglik=false, store_history=true);
-    @test ksettings_input_test(ksettings2, Y, B, R, C, V, compute_loglik=false, store_history=true);
+        # Tests on KalmanSettings
+        ksettings1 = ksettings_type(Y, B, R, C, V, compute_loglik=true, store_history=true);
+        @test ksettings_input_test(ksettings1, Y, B, R, C, V, compute_loglik=true, store_history=true);
 
-    ksettings3 = (Y, B, R, C, V, compute_loglik=true, store_history=false);
-    @test ksettings_input_test(ksettings3, Y, B, R, C, V, compute_loglik=true, store_history=false);
+        ksettings2 = ksettings_type(Y, B, R, C, V, compute_loglik=false, store_history=true);
+        @test ksettings_input_test(ksettings2, Y, B, R, C, V, compute_loglik=false, store_history=true);
 
-    ksettings4 = (Y, B, R, C, V, compute_loglik=false, store_history=false);
-    @test ksettings_input_test(ksettings4, Y, B, R, C, V, compute_loglik=false, store_history=false);
+        ksettings3 = ksettings_type(Y, B, R, C, V, compute_loglik=true, store_history=false);
+        @test ksettings_input_test(ksettings3, Y, B, R, C, V, compute_loglik=true, store_history=false);
 
-    ksettings5 = (Y, B, R, C, V);
-    @test ksettings_input_test(ksettings5, Y, B, R, C, V);
+        ksettings4 = ksettings_type(Y, B, R, C, V, compute_loglik=false, store_history=false);
+        @test ksettings_input_test(ksettings4, Y, B, R, C, V, compute_loglik=false, store_history=false);
 
-    # Initial conditions
-    @test ksettings1.X0 == [0.0];
-    @test floor.(ksettings1.P0, digits=8) == [5.26315789];
-    @test ksettings1.X0 == ksettings2.X0;
-    @test ksettings1.X0 == ksettings3.X0;
-    @test ksettings1.X0 == ksettings4.X0;
-    @test ksettings1.X0 == ksettings5.X0;
-    @test ksettings1.P0 == ksettings2.P0;
-    @test ksettings1.P0 == ksettings3.P0;
-    @test ksettings1.P0 == ksettings4.P0;
-    @test ksettings1.P0 == ksettings5.P0;
+        ksettings5 = ksettings_type(Y, B, R, C, V);
+        @test ksettings_input_test(ksettings5, Y, B, R, C, V);
 
-    #=
-    # First prediction
-    @test
+        # Initial conditions
+        @test ksettings1.X0 == [0.0];
+        @test floor.(ksettings1.P0, digits=8)[1] == 5.26315789;
+        @test ksettings1.X0 == ksettings2.X0;
+        @test ksettings1.X0 == ksettings3.X0;
+        @test ksettings1.X0 == ksettings4.X0;
+        @test ksettings1.X0 == ksettings5.X0;
+        @test ksettings1.P0 == ksettings2.P0;
+        @test ksettings1.P0 == ksettings3.P0;
+        @test ksettings1.P0 == ksettings4.P0;
+        @test ksettings1.P0 == ksettings5.P0;
 
-    # First update
-    @test
+        # Set default ksettings
+        ksettings = copy(ksettings5);
 
-    # First forecast
-    @test
+        #=
+        # First prediction
+        @test
 
-    # Prediction
-    @test
+        # First update
+        @test
 
-    # Update
-    @test
+        # First forecast
+        @test
 
-    # Forecast
-    @test
+        # Prediction
+        @test
 
-    #=
-    # Prediction with some missing observations
-    @test
+        # Update
+        @test
 
-    # Update with some missing observations
-    @test
+        # Forecast
+        @test
 
-    # Forecast with some missing observations
-    @test
-    =#
+        #=
+        # Prediction with some missing observations
+        @test
 
-    # Prediction with missing observations (only)
-    @test
+        # Update with some missing observations
+        @test
 
-    # Update with missing observations (only)
-    @test
+        # Forecast with some missing observations
+        @test
+        =#
 
-    # Forecast with missing observations (only)
-    @test
+        # Prediction with missing observations (only)
+        @test
 
-    # Last prediction
-    @test
+        # Update with missing observations (only)
+        @test
 
-    # Last update
-    @test
+        # Forecast with missing observations (only)
+        @test
 
-    # Last forecast
-    @test
+        # Last prediction
+        @test
 
-    # Kalman smoother (last period)
-    @test
+        # Last update
+        @test
 
-    # Kalman smoother (first period)
-    @test
-    =#
+        # Last forecast
+        @test
+
+        # Kalman smoother (last period)
+        @test
+
+        # Kalman smoother (first period)
+        @test
+        =#
+    end
 end
