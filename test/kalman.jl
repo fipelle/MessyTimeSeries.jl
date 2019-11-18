@@ -18,11 +18,17 @@ end
 @testset "univariate model" begin
 
     # Initialise data and state-space parameters
-    Y = [0.35 0.62 missing 1.00 1.11 1.95 2.76 2.73 3.45 3.66];
+    Y = [0.35 0.62 missing missing 1.11 missing 2.76 2.73 3.45 3.66];
     B = ones(1,1);
     R = Symmetric(1e-8*ones(1,1));
     C = 0.9*ones(1,1);
     V = Symmetric(ones(1,1));
+
+    # Correct estimates
+    X_prior = [0.00000; 0.314999; 0.557999; 0.502199; 0.451979; 0.998999; 0.899099; 2.483999; 2.456999; 3.104999];
+    P_prior = [5.263157; 1.0000; 1.0000; 1.8100; 2.4661; 1.0000; 1.8100; 1.0000; 1.0000; 1.0000];
+    X_post = [0.349999; 0.619999; 0.557999; 0.502199; 1.109999; 0.998999; 2.759999; 2.729999; 3.449999; 3.659999];
+    P_post = [0; 0; 1; 1.81; 0; 1; 0; 0; 0; 0];
 
     # Loop over ImmutableKalmanSettings and MutableKalmanSettings
     for ksettings_type = [ImmutableKalmanSettings; MutableKalmanSettings]
@@ -44,8 +50,8 @@ end
         @test ksettings_input_test(ksettings5, Y, B, R, C, V);
 
         # Initial conditions
-        @test ksettings1.X0 == [0.0];
-        @test floor.(ksettings1.P0, digits=8)[1] == 5.26315789;
+        @test ksettings1.X0[1] == 0.0;
+        @test floor.(ksettings1.P0, digits=6)[1] == 5.263157;
         @test ksettings1.X0 == ksettings2.X0;
         @test ksettings1.X0 == ksettings3.X0;
         @test ksettings1.X0 == ksettings4.X0;
@@ -56,61 +62,28 @@ end
         @test ksettings1.P0 == ksettings5.P0;
 
         # Set default ksettings
-        ksettings = copy(ksettings5);
+        ksettings = ksettings5;
 
-        #=
-        # First prediction
-        @test
+        # Initialise kstatus
+        kstatus = KalmanStatus();
 
-        # First update
-        @test
+        for t=1:length(Y)
 
-        # First forecast
-        @test
+            # Run filter
+            kfilter!(ksettings, kstatus);
 
-        # Prediction
-        @test
+            # A-priori
+            @test floor.(kstatus.X_prior[1], digits=6) == X_prior[t];
+            @test floor.(kstatus.P_prior[1], digits=6) == P_prior[t];
 
-        # Update
-        @test
+            # A-posteriori
+            @test floor.(kstatus.X_post[1], digits=6) == X_post[t];
+            @test floor.(kstatus.P_post[1], digits=6) == P_post[t];
 
-        # Forecast
-        @test
+            # TODO: add 12-step ahead forecast
+        end
 
-        #=
-        # Prediction with some missing observations
-        @test
-
-        # Update with some missing observations
-        @test
-
-        # Forecast with some missing observations
-        @test
-        =#
-
-        # Prediction with missing observations (only)
-        @test
-
-        # Update with missing observations (only)
-        @test
-
-        # Forecast with missing observations (only)
-        @test
-
-        # Last prediction
-        @test
-
-        # Last update
-        @test
-
-        # Last forecast
-        @test
-
-        # Kalman smoother (last period)
-        @test
-
-        # Kalman smoother (first period)
-        @test
-        =#
+        # Final value of the loglikelihood
+        @test floor.(kstatus.loglik, digits=6) == -3.358198
     end
 end
