@@ -29,7 +29,9 @@ end
     P_prior = [5.263157; 1.0000; 1.0000; 1.8100; 2.4661; 1.0000; 1.8100; 1.0000; 1.0000; 1.0000];
     X_post = [0.349999; 0.619999; 0.557999; 0.502199; 1.109999; 0.998999; 2.759999; 2.729999; 3.449999; 3.659999];
     P_post = [0; 0; 1; 1.81; 0; 1; 0; 0; 0; 0];
-
+    X_fc = [0.098850; 0.175106; 0.157595; 0.141836; 0.313496; 0.282147; 0.779505; 0.771032; 0.974381; 1.033692];
+    P_fc = [4.843334; 4.843334; 4.923100; 4.987711; 4.843334; 4.923100; 4.843334; 4.843334; 4.843334; 4.843334];
+    
     # Loop over ImmutableKalmanSettings and MutableKalmanSettings
     for ksettings_type = [ImmutableKalmanSettings; MutableKalmanSettings]
 
@@ -80,7 +82,10 @@ end
             @test floor.(kstatus.X_post[1], digits=6) == X_post[t];
             @test floor.(kstatus.P_post[1], digits=6) == P_post[t];
 
-            # TODO: add 12-step ahead forecast
+            # 12-step ahead forecast
+            @test floor.(kforecast(ksettings, kstatus.X_post, 12)[end], digits=6)[1] == X_fc[t];
+            @test floor.(kforecast(ksettings, kstatus.X_post, kstatus.P_post, 12)[1][end], digits=6)[1] == X_fc[t];
+            @test floor.(kforecast(ksettings, kstatus.X_post, kstatus.P_post, 12)[2][end], digits=6)[1] == P_fc[t];
         end
 
         # Final value of the loglikelihood
