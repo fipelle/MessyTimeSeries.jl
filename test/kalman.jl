@@ -23,7 +23,8 @@ Run a series of tests to check whether the kalman.jl functions work.
 function kalman_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, V::SymMatrix, benchmark_data::Tuple)
 
     # Benchmark data
-    benchmark_X0, benchmark_P0, benchmark_X_prior, benchmark_P_prior, benchmark_X_post, benchmark_P_post, benchmark_X_fc, benchmark_P_fc, benchmark_loglik = benchmark_data;
+    benchmark_X0, benchmark_P0, benchmark_X_prior, benchmark_P_prior, benchmark_X_post, benchmark_P_post, benchmark_X_fc, benchmark_P_fc, benchmark_loglik,
+        benchmark_X0_sm, benchmark_P0_sm, benchmark_X_sm, benchmark_P_sm = benchmark_data;
 
     # Loop over ImmutableKalmanSettings and MutableKalmanSettings
     for ksettings_type = [ImmutableKalmanSettings; MutableKalmanSettings]
@@ -84,7 +85,16 @@ function kalman_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, V:
         # Final value of the loglikelihood
         @test floor.(kstatus.loglik, digits=6) == benchmark_loglik
 
-        # TODO: add kalman smoother
+        # Kalman smoother
+        X_sm, P_sm, X0_sm, P0_sm = ksmoother(ksettings, kstatus);
+
+        for t=1:length(Y)
+            @test floor.(X_sm[t], digits=6)[1] == benchmark_X_sm[t];
+            @test floor.(P_sm[t], digits=6)[1] == benchmark_P_sm[t];
+        end
+
+        @test floor.(X0_sm, digits=6)[1] == benchmark_X0_sm;
+        @test floor.(P0_sm, digits=6)[1] == benchmark_P0_sm;
     end
 end
 
@@ -97,7 +107,7 @@ end
     C = 0.9*ones(1,1);
     V = Symmetric(ones(1,1));
 
-    # Correct estimates
+    # Correct estimates (Kalman filter)
     benchmark_X0 = 0.0;
     benchmark_P0 = 5.263157;
     benchmark_X_prior = [0.00000; 0.314999; 0.557999; 0.502199; 0.451979; 0.998999; 0.899099; 2.483999; 2.456999; 3.104999];
@@ -108,8 +118,15 @@ end
     benchmark_P_fc = [4.843334; 4.843334; 4.923100; 4.987711; 4.843334; 4.923100; 4.843334; 4.843334; 4.843334; 4.843334];
     benchmark_loglik = -3.358198;
 
+    # Correct estimates (Kalman smoother)
+    benchmark_X0_sm = 0.315;
+    benchmark_P0_sm = 1.0;
+    benchmark_X_sm = [0.350000; 0.619999; 0.774129; 0.936859; 1.110000; 1.924309; 2.759999; 2.730000; 3.449999; 3.659999];
+    benchmark_P_sm = [0.0; 0.0; 0.733952; 0.733952; 0.0; 0.552486; 0.0; 0.0; 0.0; 0.0];
+
     # Benchmark data
-    benchmark_data = (benchmark_X0, benchmark_P0, benchmark_X_prior, benchmark_P_prior, benchmark_X_post, benchmark_P_post, benchmark_X_fc, benchmark_P_fc, benchmark_loglik);
+    benchmark_data = (benchmark_X0, benchmark_P0, benchmark_X_prior, benchmark_P_prior, benchmark_X_post, benchmark_P_post, benchmark_X_fc, benchmark_P_fc, benchmark_loglik,
+                      benchmark_X0_sm, benchmark_P0_sm, benchmark_X_sm, benchmark_P_sm);
 
     # Run tests
     kalman_test(Y, B, R, C, V, benchmark_data);
