@@ -63,7 +63,7 @@ function kalman_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, V:
         # Initialise kstatus
         kstatus = KalmanStatus();
 
-        for t=1:length(Y)
+        for t=1:size(Y,2)
 
             # Run filter
             kfilter!(ksettings, kstatus);
@@ -83,12 +83,12 @@ function kalman_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, V:
         end
 
         # Final value of the loglikelihood
-        @test floor.(kstatus.loglik, digits=6) == benchmark_loglik
+        @test floor.(kstatus.loglik, digits=6) == benchmark_loglik;
 
         # Kalman smoother
         X_sm, P_sm, X0_sm, P0_sm = ksmoother(ksettings, kstatus);
 
-        for t=1:length(Y)
+        for t=1:size(Y,2)
             @test floor.(X_sm[t], digits=6) == benchmark_X_sm[t];
             @test floor.(P_sm[t], digits=6) == benchmark_P_sm[t];
         end
@@ -136,6 +136,64 @@ end
     # Correct estimates: kalman smoother
     benchmark_X_sm = [[0.350000], [0.619999], [0.774129], [0.936859], [1.110000], [1.924309], [2.759999], [2.730000], [3.449999], [3.659999]];
     benchmark_P_sm = [0*ι, 0*ι, 0.733952*ι, 0.733952*ι, 0*ι, 0.552486*ι, 0*ι, 0*ι, 0*ι, 0*ι];
+
+    # Benchmark data
+    benchmark_data = (benchmark_X0, benchmark_P0, benchmark_X_prior, benchmark_P_prior, benchmark_X_post, benchmark_P_post, benchmark_X_fc, benchmark_P_fc, benchmark_loglik,
+                      benchmark_X0_sm, benchmark_P0_sm, benchmark_X_sm, benchmark_P_sm);
+
+    # Run tests
+    kalman_test(Y, B, R, C, V, benchmark_data);
+end
+
+@testset "multivariate model" begin
+
+    # Initialise data and state-space parameters
+    Y = [0.72 missing 1.86 missing missing 2.52 2.98 3.81 missing 4.36;
+         0.95 0.70 missing missing missing missing 2.84 3.88 3.84 4.63];
+
+    B = [1.0 0.0; 1.0 1.0];
+    R = Symmetric(1e-8*Matrix(I,2,2));
+    C = [0.9 0.0; 0.0 0.1];
+    V = Symmetric(1.0*Matrix(I,2,2));
+
+    # Correct estimates: initial conditions
+    benchmark_X0 = [0.0; 0.0];
+    benchmark_P0 = [5.263157 0.0; 0.0 1.010101];
+
+    # Correct estimates: a priori
+    benchmark_X_prior = [[0.0; 0.0], [0.648; 0.022999], [0.59625; 0.003749], [1.673999; -0.003673], [1.506599; -0.000368],
+                         [1.355939; -0.000037], [2.267999; -0.000004], [2.681999; -0.014], [3.428999; 0.007], [3.267899; 0.0209]];
+
+    benchmark_P_prior = [[5.263157 0; 0 1.010101], [1.0 -1e-6; -1e-6 1.0], [1.405 -0.045001; -0.045001 1.005], [1 -1e-6; -1e-6 1.010035], [1.81 -1e-6; -1e-6 1.0101],
+                         [2.4661 -1e-6; -1e-6 1.010101], [1 -1e-6; -1e-6 1.010101], [1.0 -1e-6; -1e-6 1.0], [1.0 -1e-6; -1e-6 1.0], [1.405 -0.045001; -0.045001 1.005]];
+
+    # Correct estimates: a posteriori
+    benchmark_X_post = [[0.72; 0.229999], [0.6625; 0.037499], [1.859999; -0.036726], [1.673999; -0.003673], [1.506599; -0.000368],
+                        [2.519999; -0.000037], [2.979999; -0.14], [3.809999; 0.07], [3.630999; 0.209], [4.359999; 0.27]];
+
+    benchmark_P_post = [[0.0 -1.0e-6; -1.0e-6 0.0], [0.50 -0.500001; -0.500001 0.50], [0.0 -1.0e-6; -1.0e-6 1.003558], [1.0 -1.0e-6; -1.0e-6 1.010035], [1.81 -1.0e-6; -1.0e-6 1.010100],
+                        [0.0 -1e-6; -1e-6 1.010101], [0.0 -1.0e-6; -1.0e-6 0.0], [0.0 -1.0e-6; -1.0e-6 0.0], [0.50 -0.500001; -0.500001 0.50], [0.0 -1.0e-6; -1.0e-6 0.0]];
+
+    # Correct estimates: 12-step ahead forecast
+    benchmark_X_fc = [[0.203349; 0], [0.187109; 0], [0.525318; -1e-6], [0.472787; -1e-6], [0.425508; -1e-6],
+                      [0.711722; -1e-6], [0.84164; -1e-6], [1.076056; 0.0], [1.025501; 0.0], [1.231392; 0.0]];
+
+    benchmark_P_fc = [[4.843334 -1.0e-6; -1.0e-6 1.010101], [4.883217 -1.0e-6; -1.0e-6 1.010101], [4.843334 -1.0e-6; -1.0e-6 1.010101], [4.9231 -1.0e-6; -1.0e-6 1.010101], [4.987711 -1.0e-6; -1.0e-6 1.010101],
+                      [4.843334 -1.0e-6; -1.0e-6 1.010101], [4.843334 -1.0e-6; -1.0e-6 1.010101], [4.843334 -1.0e-6; -1.0e-6 1.010101], [4.883217 -1.0e-6; -1.0e-6 1.010101], [4.843334 -1.0e-6; -1.0e-6 1.010101]];
+
+    # Correct estimates: loglikelihood
+    benchmark_loglik = -4.653769;
+
+    # Correct estimates: kalman smoother (smoothed initial conditions)
+    benchmark_X0_sm = [0.6480; 0.022999];
+    benchmark_P0_sm = [1.0 -1e-6; -1e-6 1.0];
+
+    # Correct estimates: kalman smoother
+    benchmark_X_sm = [[0.72; 0.229999], [1.067260; -0.367261], [1.859999; -0.03674], [2.056339; -0.003813], [2.275528; -0.001768],
+                      [2.52; -0.014037], [2.98; -0.140001], [3.809999; 0.07], [3.970709; -0.13071], [4.359999; 0.27]];
+
+    benchmark_P_sm = [[0.0 -1e-6; -1e-6 0.0], [0.355871 -0.355872; -0.355872 0.355871], [0.0 -1e-6; -1e-6 1.003558], [0.733952 -1e-6; -1e-6 1.010034], [0.733952 -1e-6; -1e-6 1.009999],
+                      [0.0 -1e-6; -1e-6 0.999999], [0.0 -1e-6; -1e-6 0.0], [0.0 -1e-6; -1e-6 0.0], [0.354609 -0.35461; -0.35461 0.354609], [0.0 -1e-6; -1e-6 0.0]];
 
     # Benchmark data
     benchmark_data = (benchmark_X0, benchmark_P0, benchmark_X_prior, benchmark_P_prior, benchmark_X_post, benchmark_P_post, benchmark_X_fc, benchmark_P_fc, benchmark_loglik,
