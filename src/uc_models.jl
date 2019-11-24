@@ -209,7 +209,7 @@ function forecast(settings::KalmanSettings, h::Int64, arima_settings::ARIMASetti
 
         # Differenced data, ex. (1-L)^d * Y_levels
         for i=1:arima_settings.d-1
-            Y_all[1+i,:] = [NaN * ones(1,i) permutedims(diff(Y_all[i,:], dims=1))];
+            Y_all[1+i,:] = [NaN * ones(1,i) permutedims(diff(Y_all[i,:]))];
         end
 
         # Cut Y_all
