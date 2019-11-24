@@ -196,15 +196,9 @@ Compute the h-step ahead forecast for the data included in settings (in the arim
 """
 function forecast(settings::KalmanSettings, h::Int64, arima_settings::ARIMASettings)
 
-    # TODO: speed up the function
+    # Compute forecast for arima_settings.Y (adjusted by its mean)
+    fc = cumsum(forecast(settings, h) .+ arima_settings.μ * ones(1,h), dims=2);
 
-    # Compute forecast for the de-meaned data in settings.Y
-    forecast_Y = forecast(settings, h);
-
-    # Initialise adjustment factor
-    adj_factor = arima_settings.μ * ones(1,h);
-
-    # Compute adjustment factor
     if arima_settings.d > 0
 
         # Initialise Y_all
@@ -215,26 +209,19 @@ function forecast(settings::KalmanSettings, h::Int64, arima_settings::ARIMASetti
 
         # Differenced data, ex. (1-L)^d * Y_levels
         for i=1:arima_settings.d-1
-            Y_all[1+i,:] = [NaN * ones(1,i) diff(permutedims(Y_all[i,:]), dims=2)];
+            Y_all[1+i,:] = [NaN * ones(1,i) permutedims(diff(Y_all[i,:], dims=1))];
         end
 
         # Cut Y_all
         Y_all = Y_all[:,end];
 
-        for hz=1:h
-
-            # Update adjustment factor
-            adj_factor[1,hz] += sum(forecast_Y[1,hz] .+ Y_all);
-
-            # Update Y_all
-            Y_all[end] += forecast_Y[1,hz];
-
-            for i=1:arima_settings.d-1
-                Y_all[end-i] += Y_all[end-i+1];
+        for i=arima_settings.d:-1:1
+            fc .+= Y_all[i];
+            if i != 1
+                fc = cumsum(fc, dims=2);
             end
         end
     end
 
-    # Return forecast
-    return adj_factor .+ forecast_Y;
+    return fc;
 end
