@@ -109,7 +109,7 @@ p1 = plot(date_ext, [Y[:]; NaN*ones(max_hz)], label="Data", color=RGB(0,0,200/25
 
 plot!(date_ext, [NaN*ones(length(Y)); fc[:]], label="Forecast", color=RGB(0,0,200/255), line=:dot)
 ```
-<img src="./img/p0.svg">
+<img src="./img/p1.svg">
 
 
 ### Kalman filter and smoother
@@ -193,9 +193,9 @@ history_Xs, history_Ps, X0s, P0s = ksmoother(ksettings, kstatus);
 ```
 
 ### Estimation of state-space models
-The estimation of state-space models for which there is not support yet, it can be performed by using ```TSAnalysis``` and ```Optim``` jointly.
+The estimation of state-space models for which TSAnalysis does not provide support yet can be performed by using ```TSAnalysis``` and ```Optim``` jointly. The data for the following examples is the same used for the previous section.
 
-For the decomposition in the previous section, this can be done following the steps below:
+The state-space model described the previous section can be estimated following the steps below.
 
 ```julia
 function llt_seasonal_noise(θ_bound, Y, s)
@@ -264,29 +264,26 @@ More options for the optimisation can be found at https://github.com/JuliaNLSolv
 The results of the estimation can be visualised using ```Plots```.
 ```julia
 # Kalman smoother estimates
-ksettings, kstatus = uc_model(θ_bound, Y, 12);
+ksettings, kstatus = llt_seasonal_noise(θ_bound, Y, 12);
 history_Xs, history_Ps, X0s, P0s = ksmoother(ksettings, kstatus);
 
-# Plots backend
-plotlyjs();
-
 # Data vs trend
-p1 = plot(fred_df.data.date, Y, label="Data", color=RGB(185/255,185/255,185/255),
+p2 = plot(fred_df.data.date, Y', label="Data", color=RGB(185/255,185/255,185/255),
           xtickfont=font(8, "Helvetica Neue"), ytickfont=font(8, "Helvetica Neue"),
           framestyle=:box, legend=:right, size=(800,250), dpi=300)
 
 plot!(fred_df.data.date, hcat(history_Xs...)[1,:], label="Trend", color=RGB(0,0,200/255))
 ```
-<img src="./img/p1.svg">
+<img src="./img/p2.svg">
 
 and
 ```julia
 # Slope (of the trend)
-p2 = plot(fred_df.data.date, hcat(history_Xs...)[2,:], label="Slope", color=RGB(0,0,200/255),
+p3 = plot(fred_df.data.date, hcat(history_Xs...)[2,:], label="Slope", color=RGB(0,0,200/255),
           xtickfont=font(8, "Helvetica Neue"), ytickfont=font(8, "Helvetica Neue"),
           framestyle=:box, legend=:right, size=(800,250), dpi=300)
 ```
-<img src="./img/p2.svg">
+<img src="./img/p3.svg">
 
 ## Bibliography
 * R. H. Shumway and D. S. Stoffer. An approach to time series smoothing and forecasting using the EM algorithm. Journal of time series analysis, 3(4):253–264, 1982.
