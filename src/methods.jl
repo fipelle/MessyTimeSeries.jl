@@ -128,20 +128,95 @@ Soft thresholding operator.
 """
 soft_thresholding(z::Float64, ζ::Float64) = sign(z)*max(abs(z)-ζ, 0);
 
+"""
+    square_vandermonde_matrix(λ::FloatVector)
+
+Construct square vandermonde matrix on the basis of a vector of eigenvalues λ.
+
+Note: the eigenvalues are ordered in a convenient way for `eigvals_to_coeff`.
+"""
+square_vandermonde_matrix(λ::FloatVector) = λ'.^collect(length(λ)-1:-1:0);
 
 #=
 --------------------------------------------------------------------------------------------------------------------------------
-Transformations
+Parameter transformations
 --------------------------------------------------------------------------------------------------------------------------------
 =#
 
 """
-    demean(X::Array{Float64,1})
+    eigvals_to_coeff(λ::FloatVector)
+
+Compute the companion form corresponding to a vector of eigenvalues and returns the first row.
+
+Note: this approach returns a non-zero vector of coefficients if the elements of λ are unique (distinct eigenvalues).
+
+# Arguments
+- `λ`: Vector of eigenvalues
+- `k`: Number of coefficients to retrieve from the companion form matrix (default: 1)
+"""
+function eigvals_to_coeff(λ::FloatVector; k::Int64=1)
+
+    try
+        # Vandermonde matrix
+        V = square_vandermonde_matrix(λ);
+
+        # Return coefficients
+        if k == 1
+            return permutedims(V[1,:])*Diagonal(λ)*inv(V);
+        else
+            return V[1:k,:]*Diagonal(λ)*inv(V); # TODO: this line has not been tested properly, since there is not yet support for multivariate models.
+        end
+
+    catch err
+        if isa(err, SingularException)
+            return zeros(length(λ));
+        else
+            rethrow(err);
+        end
+    end
+end
+
+"""
+    get_bounded_log(Θ_unbound::Float64, MIN::Float64)
+
+Compute parameters with bounded support using a generalised log transformation.
+"""
+get_bounded_log(Θ_unbound::Float64, MIN::Float64) = exp(Θ_unbound) + MIN;
+
+"""
+    get_unbounded_log(Θ_bound::Float64, MIN::Float64)
+
+Compute parameters with unbounded support using a generalised log transformation.
+"""
+get_unbounded_log(Θ_bound::Float64, MIN::Float64) = log(Θ_bound - MIN);
+
+"""
+    get_bounded_logit(Θ_unbound::Float64, MIN::Float64, MAX::Float64)
+
+Compute parameters with bounded support using a generalised logit transformation.
+"""
+get_bounded_logit(Θ_unbound::Float64, MIN::Float64, MAX::Float64) = (MIN + (MAX * exp(Θ_unbound))) / (1 + exp(Θ_unbound));
+
+"""
+    get_unbounded_logit(Θ_bound::Float64, MIN::Float64, MAX::Float64)
+
+Compute parameters with unbounded support using a generalised logit transformation.
+"""
+get_unbounded_logit(Θ_bound::Float64, MIN::Float64, MAX::Float64) = log((Θ_bound - MIN) / (MAX - Θ_bound));
+
+#=
+--------------------------------------------------------------------------------------------------------------------------------
+Time series
+--------------------------------------------------------------------------------------------------------------------------------
+=#
+
+"""
+    demean(X::FloatVector)
     demean(X::JVector)
 
 Demean data.
 
-    demean(X::Array{Float64,2})
+    demean(X::FloatMatrix)
     demean(X::JArray)
 
 Demean data.
@@ -162,17 +237,10 @@ julia> demean([1.0 3.5 1.5 4.0 2.0; 4.5 2.5 5.0 3.0 5.5])
   0.4  -1.6   0.9  -1.1   1.4
 ```
 """
-demean(X::Array{Float64,1}) = X .- mean(X);
-demean(X::Array{Float64,2}) = X .- mean(X,dims=2);
+demean(X::FloatVector) = X .- mean(X);
+demean(X::FloatMatrix) = X .- mean(X,dims=2);
 demean(X::JVector) = X .- mean_skipmissing(X);
 demean(X::JArray) = X .- mean_skipmissing(X);
-
-
-#=
---------------------------------------------------------------------------------------------------------------------------------
-Base: time series
---------------------------------------------------------------------------------------------------------------------------------
-=#
 
 """
     interpolate(X::JArray{Float64}, n::Int64, T::Int64)
@@ -198,10 +266,10 @@ function interpolate(X::JArray{Float64}, n::Int64, T::Int64)
     return data;
 end
 
-interpolate(X::Array{Float64}, n::Int64, T::Int64) = X;
+interpolate(X::FloatArray, n::Int64, T::Int64) = X;
 
 """
-    lag(X::Array, p::Int64)
+    lag(X::FloatArray, p::Int64)
 
 Construct the data required to run a standard vector autoregression.
 
@@ -213,7 +281,7 @@ Construct the data required to run a standard vector autoregression.
 - `X_{t}`
 - `X_{t-1}`
 """
-function lag(X::Array, p::Int64)
+function lag(X::FloatArray, p::Int64)
 
     # VAR(p) data
     X_t = X[:, 1+p:end];
@@ -224,41 +292,15 @@ function lag(X::Array, p::Int64)
 end
 
 """
-    companion_form(Ψ::Array{Float64,2}, Σ::SymMatrix)
+    companion_form(θ::FloatVector)
 
-Construct the companion form parameters of a VAR(p) with coefficients Ψ and var-cov matrix of the residuals Σ.
+Construct the companion form parameters of θ.
 """
-function companion_form(Ψ::Array{Float64,2}, Σ::SymMatrix)
+function companion_form(θ::FloatVector)
 
-    # Dimensions
-    n = size(Σ,2);
-    p = Int64(size(Ψ,2)/n);
-    np_1 = n*(p-1);
+    # Number of parameters in θ
+    k = length(θ);
 
-    # Companion form VAR(p)
-    C = [Ψ; Matrix(I, np_1, np_1) zeros(np_1, n)];
-    V = Symmetric([Σ zeros(n, np_1); zeros(np_1, n*p)])::SymMatrix;
-
-    # Return output
-    return C, V;
-end
-
-"""
-    ext_companion_form(Ψ::Array{Float64,2}, Σ::SymMatrix)
-
-Construct the companion form parameters of a VAR(p) with coefficients Ψ and var-cov matrix of the residuals Σ. The companion form is extend with additional n entries.
-"""
-function ext_companion_form(Ψ::Array{Float64,2}, Σ::SymMatrix)
-
-    # Dimensions
-    n = size(Σ,2);
-    p = Int64(size(Ψ,2)/n);
-    np = n*p;
-
-    # Companion form VAR(p)
-    C = [Ψ zeros(n, n); Matrix(I, np, np) zeros(np, n)];
-    V = Symmetric([Σ zeros(n, np); zeros(np, np+n)])::SymMatrix;
-
-    # Return output
-    return C, V;
+    # Return companion form
+    return [permutedims(θ); Matrix(I, k-1, k-1) zeros(k-1)];
 end
