@@ -151,10 +151,10 @@ X0 = zeros(14);
 P0 = Symmetric(cat(dims=[1,2], 1e3*Matrix(I,2,2), 1e-4*Matrix(I,12,12)));
 
 # Settings
-ksettings = ImmutableKalmanSettings(permutedims(Y), B, R, C, V, X0, P0);
+ksettings = ImmutableKalmanSettings(Y, B, R, C, V, X0, P0);
 
 # Filter for t = 1, ..., T (the output is dynamically stored into kstatus)
-for t=1:size(Y,1)
+for t=1:size(Y,2)
     kfilter!(ksettings, kstatus);
 end
 
@@ -197,7 +197,7 @@ At any point in time, the Kalman smoother can be executed via
 history_Xs, history_Ps, X0s, P0s = ksmoother(ksettings, kstatus);
 ```
 
-### Estimation of the state-space parameters
+### Estimation of state-space models
 The estimation of state-space models for which there is not support yet, it can be performed by using ```TSAnalysis``` and ```Optim``` jointly.
 
 For the decomposition in the previous section, this can be done following the steps below:
@@ -225,10 +225,10 @@ function llt_seasonal_noise(θ_bound, Y, s)
     P0 = Symmetric(cat(dims=[1,2], 1e3*Matrix(I,2+s,2+s)));
 
     # Settings
-    ksettings = ImmutableKalmanSettings(permutedims(Y), B, R, C, V, X0, P0);
+    ksettings = ImmutableKalmanSettings(Y, B, R, C, V, X0, P0);
 
     # Filter for t = 1, ..., T (the output is dynamically stored into kstatus)
-    for t=1:size(Y,1)
+    for t=1:size(Y,2)
         kfilter!(ksettings, kstatus);
     end
 
@@ -237,8 +237,11 @@ end
 
 function fmin(θ_unbound, Y; s::Int64=12)
 
-    # θ_unbound includes the variances for the innovations of noise, trend, drift and seasonal components
-    θ_bound = get_bounded_log(θ_unbound, 1e-8);
+    # Apply bounds
+    θ_bound = copy(θ_unbound);
+    for i=1:length(θ_bound)
+        θ_bound[i] = TSAnalysis.get_bounded_log(θ_bound[i], 1e-8);
+    end
 
     # Compute loglikelihood
     ksettings, kstatus = llt_seasonal_noise(θ_bound, Y, s)
@@ -251,13 +254,13 @@ end
 θ_starting = 1e-8*ones(4);
 
 # Estimate the model
-res = Optim.optimize(θ_unbound->llt_seasonal_noise(θ_unbound, Y, 12), θ_starting, NelderMead(),
+res = Optim.optimize(θ_unbound->fmin(θ_unbound, Y, 12), θ_starting, NelderMead(),
                      Optim.Options(iterations=10000, f_tol=1e-4, x_tol=1e-4, show_trace=true, show_every=500));
 
 # Apply bounds
 θ_bound = copy(res.minimizer);
 for i=1:length(θ_bound)
-    θ_bound[i] = get_bounded_log(θ_bound[i], 1e-8);
+    θ_bound[i] = TSAnalysis.get_bounded_log(θ_bound[i], 1e-8);
 end
 ```
 
