@@ -1,5 +1,5 @@
 """
-    arima_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, V::SymMatrix, benchmark_data::Tuple)
+    arima_test(arima_settings::ARIMASettings, benchmark_data::Tuple)
 
 Run a series of tests to check whether the arima functions in uc_models.jl work.
 """

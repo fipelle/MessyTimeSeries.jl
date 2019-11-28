@@ -204,6 +204,7 @@ function ARIMASettings(Y_levels::Union{FloatMatrix, JArray{Float64,2}}, d::Int64
         end
     end
 
+    # Mean
     μ = mean(Y);
 
     # Demean data

@@ -196,16 +196,17 @@ Compute the h-step ahead forecast for the data included in settings (in the arim
 """
 function forecast(settings::KalmanSettings, h::Int64, arima_settings::ARIMASettings)
 
-    # Compute forecast for arima_settings.Y (adjusted by its mean)
-    fc = cumsum(forecast(settings, h) .+ arima_settings.μ * ones(1,h), dims=2);
-
+    # ARIMA
     if arima_settings.d > 0
+
+        # Compute forecast for arima_settings.Y (adjusted by its mean)
+        fc = cumsum(forecast(settings, h) .+ arima_settings.μ, dims=2);
 
         # Initialise Y_all
         Y_all = zeros(arima_settings.d, arima_settings.d);
 
         # The first row of Y_all is the data in levels
-        Y_all[1,:] = arima_settings.Y_levels[1, end-arima_settings.d+1:end];
+        Y_all[1,:] = arima_settings.Y_levels[end-arima_settings.d+1:end];
 
         # Differenced data, ex. (1-L)^d * Y_levels
         for i=1:arima_settings.d-1
@@ -221,6 +222,11 @@ function forecast(settings::KalmanSettings, h::Int64, arima_settings::ARIMASetti
                 fc = cumsum(fc, dims=2);
             end
         end
+
+    # ARMA
+    else
+        # Compute forecast for arima_settings.Y (adjusted by its mean)
+        fc = forecast(settings, h) .+ arima_settings.μ;
     end
 
     return fc;
