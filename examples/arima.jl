@@ -5,7 +5,7 @@ using TSAnalysis, Optim;
 using FredData;
 f = Fred();
 
-# Download Industrial Production: Manufacturing (NAICS), Log-levels (monthly, NSA)
+# Download Industrial Production Index, Log-levels (monthly, SA)
 fred_df = get_data(f, "INDPRO", observation_start="1984-01-01", units="log");
 
 # Store data in Array{Float64,1}
