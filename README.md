@@ -37,6 +37,9 @@ using TSAnalysis;
 
 # Plots backend
 plotlyjs();
+
+# Initialise FredData
+f = Fred();
 ```
 
 Additional examples are included in the ```/examples/``` folder.
@@ -48,10 +51,6 @@ Additional examples are included in the ```/examples/``` folder.
 
 Use the following code to download the data for the examples on the ARIMA models:
 ```julia
-# Load FredData
-using FredData;
-f = Fred();
-
 # Download Industrial Production Index, Log-levels (monthly, SA)
 fred_df = get_data(f, "INDPRO", observation_start="1984-01-01", units="log");
 
@@ -120,10 +119,6 @@ The following examples show how to perform a standard univariate state-space dec
 
 The following examples use non-seasonally adjusted (NSA) data that can be downloaded using
 ```julia
-# Load FredData
-using FredData;
-f = Fred();
-
 # Download Industrial Production Index, Log-levels (monthly, SA)
 fred_df = get_data(f, "IPGMFN", observation_start="1984-01-01", units="log");
 
@@ -254,7 +249,7 @@ end
 θ_starting = 1e-8*ones(4);
 
 # Estimate the model
-res = Optim.optimize(θ_unbound->fmin(θ_unbound, Y, 12), θ_starting, NelderMead(),
+res = Optim.optimize(θ_unbound->fmin(θ_unbound, Y, s=12), θ_starting, NelderMead(),
                      Optim.Options(iterations=10000, f_tol=1e-4, x_tol=1e-4, show_trace=true, show_every=500));
 
 # Apply bounds
