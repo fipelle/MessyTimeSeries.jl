@@ -199,9 +199,6 @@ function forecast(settings::KalmanSettings, h::Int64, arima_settings::ARIMASetti
     # ARIMA
     if arima_settings.d > 0
 
-        # Compute forecast for arima_settings.Y (adjusted by its mean)
-        fc = cumsum(forecast(settings, h) .+ arima_settings.μ, dims=2);
-
         # Initialise Y_all
         Y_all = zeros(arima_settings.d, arima_settings.d);
 
@@ -216,6 +213,10 @@ function forecast(settings::KalmanSettings, h::Int64, arima_settings::ARIMASetti
         # Cut Y_all
         Y_all = Y_all[:,end];
 
+        # Initial cumulated forecast
+        fc = cumsum(forecast(settings, h) .+ arima_settings.μ, dims=2);
+
+        # Loop over d to compute a prediction for the levels
         for i=arima_settings.d:-1:1
             fc .+= Y_all[i];
             if i != 1

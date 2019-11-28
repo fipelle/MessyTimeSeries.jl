@@ -18,8 +18,24 @@ end
 @testset "arma" begin
 
     # Load data
-    Y = permutedims(read_test_input("./input/arima/arma"));
+    Y = permutedims(read_test_input("./input/arma/data"));
 
     # Settings for ARMA(1,1)
     arima_settings = ARIMASettings(Y, 0, 1, 1);
+
+    # Correct estimates: initial conditions
+    benchmark_X0 = read_test_input("./input/arma/benchmark_X0");
+    benchmark_P0 = read_test_input("./input/arma/benchmark_P0");
+
+    # Correct estimates: observation equation
+    benchmark_B = read_test_input("./input/arma/benchmark_B");
+    benchmark_R = read_test_input("./input/arma/benchmark_R");
+
+    # Correct estimates: transition equation
+    benchmark_C = read_test_input("./input/arma/benchmark_C");
+    benchmark_V = read_test_input("./input/arma/benchmark_V");
+
+    # Correct estimates: forecast
+    benchmark_fc = read_test_input("./input/arma/benchmark_fc");
+
 end
