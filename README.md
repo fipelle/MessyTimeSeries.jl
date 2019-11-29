@@ -143,7 +143,7 @@ V = Symmetric(cat(dims=[1,2], [1e-4 0.0; 0.0 1e-4], 1e-4*Matrix(I,12,12)));
 
 # Initial conditions
 X0 = zeros(14);
-P0 = Symmetric(cat(dims=[1,2], 1e3*Matrix(I,2,2), 1e-4*Matrix(I,12,12)));
+P0 = Symmetric(cat(dims=[1,2], 1e3*Matrix(I,2,2), 1e3*Matrix(I,12,12)));
 
 # Settings
 ksettings = ImmutableKalmanSettings(Y, B, R, C, V, X0, P0);
@@ -160,7 +160,6 @@ trend_llts = hcat(kstatus.history_X_post...)[1,:];
 #### Kalman filter (out-of-sample forecast)
 ```TSAnalysis``` allows to compute *h*-step ahead forecasts for the latent states without resetting the Kalman filter. This is particularly efficient for applications wherein the number of observed time periods is particularly large, or for heavy out-of-sample exercises.
 
-#### Local linear trend + seasonal + noise decomposition
 An easy way to compute the 12-step ahead prediction is to edit the block
 ```julia
 # Filter for t = 1, ..., T (the output is dynamically stored into kstatus)
