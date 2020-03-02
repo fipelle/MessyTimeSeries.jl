@@ -171,20 +171,22 @@ UC models: structures
 abstract type UCSettings end
 
 """
-    ARIMASettings(...)
+    VARIMASettings(...)
 
-Define an immutable structure to manage ARIMA specifications.
+Define an immutable structure to manage VARIMA specifications.
 
 # Arguments
 - `Y_levels`: Observed measurements (`nxT`) - in levels
 - `Y`: Observed measurements (`nxT`) - differenced and demeaned
+- `n`: Number of series
 - `d`: Degree of differencing
 - `p`: Order of the autoregressive model
 - `q`: Order of the moving average model
 """
-struct ARIMASettings <: UCSettings
+struct VARIMASettings <: UCSettings
     Y_levels::Union{FloatMatrix, JArray{Float64,2}}
     Y::Union{FloatMatrix, JArray{Float64,2}}
+    n::Int64
     μ::Float64
     r::Int64
     d::Int64
@@ -192,8 +194,8 @@ struct ARIMASettings <: UCSettings
     q::Int64
 end
 
-# ARIMASettings constructor
-function ARIMASettings(Y_levels::Union{FloatMatrix, JArray{Float64,2}}, d::Int64, p::Int64, q::Int64)
+# VARIMASettings constructor
+function VARIMASettings(Y_levels::Union{FloatMatrix, JArray{Float64,2}}, d::Int64, p::Int64, q::Int64)
 
     # Differenciate data
     Y = copy(Y_levels);
@@ -205,11 +207,14 @@ function ARIMASettings(Y_levels::Union{FloatMatrix, JArray{Float64,2}}, d::Int64
     end
 
     # Mean
-    μ = mean(Y);
+    μ = mean_skipmissing(Y);
 
     # Demean data
     Y = demean(Y);
 
-    # ARIMASettings
-    return ARIMASettings(Y_levels, Y, μ, max(p, q+1), d, p, q);
+    # VARIMASettings
+    return VARIMASettings(Y_levels, Y, size(Y, dims=1), μ, max(p, q+1), d, p, q);
 end
+
+# ARIMASettings constructor
+ARIMASettings(Y_levels::Union{FloatMatrix, JArray{Float64,2}}, d::Int64, p::Int64, q::Int64) = VARIMASettings(Y_levels, d, p, q);
