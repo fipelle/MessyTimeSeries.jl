@@ -5,6 +5,13 @@ UC models: general interface
 =#
 
 """
+    penalty_asin(λ::Float64)
+
+Return penalty value for a single eigenvalue λ.
+"""
+penalty_asin(λ::Float64) = abs(λ) < 1 ? asin(abs(λ)) : 1/eps();
+
+"""
     fmin_uc_models(θ_unbound::FloatVector, lb::FloatVector, ub::FloatVector, transform_id::Array{Int64,1}, model_structure::Function, settings::UCSettings)
 
 Return -1*loglikelihood for the UC model specified by model_structure(settings)
@@ -17,7 +24,7 @@ Return -1*loglikelihood for the UC model specified by model_structure(settings)
 - `model_structure`: Function to setup the state-space structure
 - `settings`: Settings for model_structure
 """
-function fmin_uc_models(θ_unbound::FloatVector, lb::FloatVector, ub::FloatVector, transform_id::Array{Int64,1}, model_structure::Function, uc_settings::UCSettings)
+function fmin_uc_models(θ_unbound::FloatVector, lb::FloatVector, ub::FloatVector, transform_id::Array{Int64,1}, model_structure::Function, uc_settings::UCSettings, tightness::Float64)
 
     # Compute parameters with bounded support
     θ = copy(θ_unbound);
@@ -31,15 +38,16 @@ function fmin_uc_models(θ_unbound::FloatVector, lb::FloatVector, ub::FloatVecto
 
     # Kalman status and settings
     status = KalmanStatus();
-    settings = ImmutableKalmanSettings(model_structure(θ, uc_settings)...);
+    model_instance, model_penalty = model_structure(θ, uc_settings);
+    settings = ImmutableKalmanSettings(model_instance...);
 
     # Compute loglikelihood for t = 1, ..., T
     for t=1:size(settings.Y,2)
         kfilter!(settings, status);
     end
 
-    # Return -loglikelihood
-    return -status.loglik;
+    # Return fmin
+    return -status.loglik + tightness*model_penalty;
 end
 
 """
@@ -88,20 +96,16 @@ VARIMA model
 VARMA(p,q) representation similar to the form reported in Hamilton (1994) for ARIMA(p,q) models.
 
 # Arguments
-- `θ`: Model parameters (eigenvalues + variance of the innovation)
+- `θ`: Model parameters (coefficients + variance of the innovation)
 - `settings`: VARIMASettings struct
 """
 function varma_structure(θ::FloatVector, settings::VARIMASettings)
 
     # Initialise
     ϑ = copy(θ);
-    I_n = Matrix(I, settings.n, settings.n) |> Array{Float64};
-    UT_n = UpperTriangular(ones(settings.n, settings.n)) |> Array;
+    I_n = Matrix(I, settings.n, settings.n) |> FloatMatrix;
+    UT_n = UpperTriangular(ones(settings.n, settings.n)) |> FloatMatrix;
     UT_n[I_n.==1] .= 0;
-
-    # VARMA(p,q) eigenvalues -> coefficients (this enforces causality and invertibility in the past)
-    ϑ[1:settings.nnq] = eigvals_to_coeff(θ[1:settings.nnq]);
-    ϑ[settings.nnq+1:settings.nnq+settings.nnp] = eigvals_to_coeff(θ[settings.nnq+1:settings.nnq+settings.nnp]);
 
     # Observation equation
     B = [I_n reshape(ϑ[1:settings.nnq], settings.n, settings.nq) zeros(settings.n, settings.nr-settings.nq-settings.n)];
@@ -123,8 +127,18 @@ function varma_structure(θ::FloatVector, settings::VARIMASettings)
     # Transition equation: variance
     V = Symmetric(cat(dims=[1,2], Symmetric(V1), zeros(settings.np-settings.n, settings.np-settings.n)));
 
+    # Companion form for the moving average part
+    companion_vma = [B[:,settings.n+1:settings.n+settings.nq];
+                     Matrix(I, settings.nq-settings.n, settings.nq-settings.n) zeros(settings.nq-settings.n, settings.n)];
+
+    # Compute penalty
+    varma_penalty = 0.0;
+    for λ = [eigvals(C); eigvals(companion_vma)]
+        varma_penalty += penalty_asin(λ);
+    end
+
     # Return state-space structure
-    return settings.Y, B, R, C, V;
+    return (settings.Y, B, R, C, V), varma_penalty;
 end
 
 """
@@ -133,7 +147,7 @@ end
 Return KalmanSettings for a varima(d,p,q) model with parameters θ.
 
 # Arguments
-- `θ`: Model parameters (eigenvalues + variance of the innovation)
+- `θ`: Model parameters (coefficients + variance of the innovation)
 - `settings`: VARIMASettings struct
 
     varima(settings::VARIMASettings, args...)
@@ -142,14 +156,16 @@ Estimate varima(d,p,q) model.
 
 # Arguments
 - `settings`: VARIMASettings struct
+- `tightness`: Controls the strength of the penalty for the non-causal / non-invertible case
 - `args`: Arguments for Optim.optimize
 """
 function varima(θ::FloatVector, settings::VARIMASettings)
 
     # Compute state-space parameters
-    output = ImmutableKalmanSettings(varma_structure(θ, settings)...);
+    model_instance, _ = varma_structure(θ, settings);
+    output = ImmutableKalmanSettings(model_instance...);
 
-# TBD: update
+# TBD: update the warnings
 #=
     # Warning 1: invertibility (in the past)
     eigval_ma = eigvals(companion_form(output.B[2:end]));
@@ -174,21 +190,21 @@ function varima(θ::FloatVector, settings::VARIMASettings)
     return output
 end
 
-function varima(settings::VARIMASettings, args...)
+function varima(settings::VARIMASettings, tightness::Float64, args...)
 
     # No. covariances
-    no_cov = settings.n*(settings.n-1)/2;
+    n_cov = settings.n*(settings.n-1)/2;
 
     # Starting point
-    θ_starting = 1e-8*ones(settings.np+settings.nq+settings.n+no_cov);
+    θ_starting = 1e-8*ones(settings.np+settings.nq+settings.n+n_cov);
 
     # Bounds
-    lb = [-0.99*ones(settings.np+settings.nq); 1e-8*ones(settings.n); -Inf*ones(no_cov)];
-    ub = [0.99*ones(settings.np+settings.nq);  Inf*ones(settings.n); Inf*ones(no_cov)];
-    transform_id = [2*ones(settings.np+settings.nq); ones(settings.n); zeros(no_cov)] |> Array{Int64,1};
+    lb = [-0.99*ones(settings.np+settings.nq); 1e-8*ones(settings.n); -Inf*ones(n_cov)];
+    ub = [0.99*ones(settings.np+settings.nq);  Inf*ones(settings.n); Inf*ones(n_cov)];
+    transform_id = [2*ones(settings.np+settings.nq); ones(settings.n); zeros(n_cov)] |> Array{Int64,1};
 
     # Estimate the model
-    res = Optim.optimize(θ_unbound->fmin_uc_models(θ_unbound, lb, ub, transform_id, varma_structure, settings), θ_starting, args...);
+    res = Optim.optimize(θ_unbound->fmin_uc_models(θ_unbound, lb, ub, transform_id, varma_structure, settings, tightness), θ_starting, args...);
 
     # Apply bounds
     θ_minimizer = copy(res.minimizer);
