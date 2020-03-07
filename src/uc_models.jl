@@ -5,16 +5,16 @@ UC models: general interface
 =#
 
 """
-    penalty_asin(λ::Float64)
+    penalty_logit(λ::Float64)
 
-Return penalty value for a single eigenvalue λ.
+Return logit penalty value for a single eigenvalue λ.
 """
-penalty_asin(λ::Float64) = abs(λ) < 1 ? asin(abs(λ)) : 1/eps();
+penalty_logit(λ::Float64) = abs(λ) < 1 ? log(abs(λ)/(1-abs(λ))) : 1/eps();
 
 """
     fmin_uc_models(θ_unbound::FloatVector, lb::FloatVector, ub::FloatVector, transform_id::Array{Int64,1}, model_structure::Function, settings::UCSettings)
 
-Return -1*loglikelihood for the UC model specified by model_structure(settings)
+Return fmin for the UC model specified by model_structure(settings)
 
 # Arguments
 - `θ_unbound`: Model parameters (with unbounded support)
@@ -23,6 +23,7 @@ Return -1*loglikelihood for the UC model specified by model_structure(settings)
 - `transform_id`: Type of transformation required for the parameters (0 = none, 1 = generalised log, 2 = generalised logit)
 - `model_structure`: Function to setup the state-space structure
 - `settings`: Settings for model_structure
+- `tightness`: Controls the strength of the penalty (if any)
 """
 function fmin_uc_models(θ_unbound::FloatVector, lb::FloatVector, ub::FloatVector, transform_id::Array{Int64,1}, model_structure::Function, uc_settings::UCSettings, tightness::Float64)
 
@@ -134,7 +135,7 @@ function varma_structure(θ::FloatVector, settings::VARIMASettings)
     # Compute penalty
     varma_penalty = 0.0;
     for λ = [eigvals(C); eigvals(companion_vma)]
-        varma_penalty += penalty_asin(λ);
+        varma_penalty += penalty_logit(λ);
     end
 
     # Return state-space structure
