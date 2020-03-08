@@ -5,11 +5,11 @@ UC models: general interface
 =#
 
 """
-    penalty_logit(λ::Float64)
+    penalty_eigen(λ::Float64)
 
-Return logit penalty value for a single eigenvalue λ.
+Return penalty value for a single eigenvalue λ.
 """
-penalty_logit(λ::Float64) = abs(λ) < 1 ? log(abs(λ)/(1-abs(λ))) : 1/eps();
+penalty_eigen(λ::Float64) = abs(λ) < 1 ? abs(λ)/(1-abs(λ)) : 1/eps();
 
 """
     fmin_uc_models(θ_unbound::FloatVector, lb::FloatVector, ub::FloatVector, transform_id::Array{Int64,1}, model_structure::Function, settings::UCSettings)
@@ -135,7 +135,7 @@ function varma_structure(θ::FloatVector, settings::VARIMASettings)
     # Compute penalty
     varma_penalty = 0.0;
     for λ = [eigvals(C); eigvals(companion_vma)]
-        varma_penalty += penalty_logit(λ);
+        varma_penalty += penalty_eigen(λ);
     end
 
     # Return state-space structure
