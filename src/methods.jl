@@ -227,7 +227,7 @@ function interpolate(X::JArray{Float64}, n::Int64, T::Int64)
     for i=1:n
         data[i, ismissing.(X[i, :])] .= mean_skipmissing(X[i, :]);
     end
-    data = convert(Array{Float64}, data);
+    data = data |> FloatArray;
     return data;
 end
 

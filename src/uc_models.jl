@@ -194,7 +194,7 @@ end
 function varima(settings::VARIMASettings, tightness::Float64, args...)
 
     # No. covariances
-    n_cov = settings.n*(settings.n-1)/2;
+    n_cov = (settings.n^2-settings.n)/2 |> Int64;
 
     # Starting point
     θ_starting = 1e-8*ones(settings.np+settings.nq+settings.n+n_cov);

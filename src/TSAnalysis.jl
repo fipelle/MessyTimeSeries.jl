@@ -15,12 +15,13 @@ module TSAnalysis
 
     # Export types
     export JVector, JArray, FloatVector, FloatMatrix, FloatArray, SymMatrix, DiagMatrix,
-           KalmanSettings, ImmutableKalmanSettings, MutableKalmanSettings, KalmanStatus, ARIMASettings;
+           KalmanSettings, ImmutableKalmanSettings, MutableKalmanSettings, KalmanStatus,
+           ARIMASettings, VARIMASettings;
 
     # Export methods
     export check_bounds, isnothing, error_info, verb_message, interpolate, soft_thresholding, isconverged,
             mean_skipmissing, std_skipmissing, is_vector_in_matrix, demean, lag, companion_form;
 
     # Export functions
-    export kfilter!, kforecast, ksmoother, fmin_uc_models, arima, forecast;
+    export kfilter!, kforecast, ksmoother, fmin_uc_models, varima, forecast;
 end
