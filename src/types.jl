@@ -208,7 +208,7 @@ end
 function VARIMASettings(Y_levels::Union{FloatMatrix, JArray{Float64,2}}, d::Int64, p::Int64, q::Int64)
 
     # Initialise
-    n = size(Y, dims=1);
+    n = size(Y, 1);
     r = max(p, q+1);
 
     # Differenciate data
