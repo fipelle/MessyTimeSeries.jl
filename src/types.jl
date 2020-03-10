@@ -192,7 +192,7 @@ Define an immutable structure to manage VARIMA specifications.
 struct VARIMASettings <: UCSettings
     Y_levels::Union{FloatMatrix, JArray{Float64,2}}
     Y::Union{FloatMatrix, JArray{Float64,2}}
-    μ::Float64
+    μ::FloatVector
     n::Int64
     d::Int64
     p::Int64
@@ -221,7 +221,7 @@ function VARIMASettings(Y_levels::Union{FloatMatrix, JArray{Float64,2}}, d::Int6
     end
 
     # Mean
-    μ = mean_skipmissing(Y);
+    μ = mean_skipmissing(Y)[:,1];
 
     # Demean data
     Y = demean(Y);
