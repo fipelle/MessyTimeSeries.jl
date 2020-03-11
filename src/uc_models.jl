@@ -126,7 +126,7 @@ function varma_structure(θ::FloatVector, settings::VARIMASettings)
     V1[UT_n.==1] .= ϑ[settings.nnq+settings.nnp+settings.n+1:end];
 
     # Transition equation: variance
-    V = Symmetric(cat(dims=[1,2], Symmetric(V1), zeros(settings.np-settings.n, settings.np-settings.n)));
+    V = Symmetric(cat(dims=[1,2], Symmetric(V1), zeros(settings.nr-settings.n, settings.nr-settings.n)));
 
     # Companion form for the moving average part
     companion_vma = [B[:,settings.n+1:settings.n+settings.nq];
