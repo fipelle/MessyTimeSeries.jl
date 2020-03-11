@@ -114,7 +114,7 @@ function varma_structure(θ::FloatVector, settings::VARIMASettings)
 
     # Transition equation: coefficients
     C = [reshape(ϑ[settings.nnq+1:settings.nnq+settings.nnp], settings.n, settings.np) zeros(settings.n, settings.nr-settings.np);
-         Matrix(I, settings.np-settings.n, settings.np-settings.n) zeros(settings.np-settings.n, settings.n)];
+         Matrix(I, settings.nr-settings.n, settings.nr-settings.n) zeros(settings.nr-settings.n, settings.n)];
 
     # Initialise VARMA(p,q) var-cov matrix
     V1 = zeros(settings.n, settings.n);
