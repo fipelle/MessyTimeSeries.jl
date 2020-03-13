@@ -197,12 +197,12 @@ function varima(settings::VARIMASettings, tightness::Float64, args...)
     n_cov = (settings.n^2-settings.n)/2 |> Int64;
 
     # Starting point
-    θ_starting = 1e-8*ones(settings.np+settings.nq+settings.n+n_cov);
+    θ_starting = 1e-8*ones(settings.nnp+settings.nnq+settings.n+n_cov);
 
     # Bounds
-    lb = [-0.99*ones(settings.np+settings.nq); 1e-8*ones(settings.n); -Inf*ones(n_cov)];
-    ub = [0.99*ones(settings.np+settings.nq);  Inf*ones(settings.n); Inf*ones(n_cov)];
-    transform_id = [2*ones(settings.np+settings.nq); ones(settings.n); zeros(n_cov)] |> Array{Int64,1};
+    lb = [-0.99*ones(settings.nnp+settings.nnq); 1e-8*ones(settings.n); -Inf*ones(n_cov)];
+    ub = [0.99*ones(settings.nnp+settings.nnq);  Inf*ones(settings.n); Inf*ones(n_cov)];
+    transform_id = [2*ones(settings.nnp+settings.nnq); ones(settings.n); zeros(n_cov)] |> Array{Int64,1};
 
     # Estimate the model
     res = Optim.optimize(θ_unbound->fmin_uc_models(θ_unbound, lb, ub, transform_id, varma_structure, settings, tightness), θ_starting, args...);

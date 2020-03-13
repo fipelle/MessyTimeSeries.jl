@@ -16,7 +16,8 @@ function arima_test(Y::Array{Float64,2}, d::Int64, p::Int64, q::Int64, benchmark
     @test arima_settings.r == max(p, q+1);
 
     # Estimate parameters
-    arima_out = arima(arima_settings, NelderMead(), Optim.Options(iterations=10000, f_tol=1e-4, x_tol=1e-4, show_trace=true, show_every=500));
+    arima_out = varima(arima_settings, 1/(arima_settings.np+arima_settings.nq), NelderMead(),
+                       Optim.Options(iterations=10000, f_tol=1e-4, x_tol=1e-4, show_trace=true, show_every=500));
 
     # Test on the parameters
     @test round.(arima_out.B, digits=10) == benchmark_B;
