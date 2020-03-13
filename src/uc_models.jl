@@ -9,7 +9,8 @@ UC models: general interface
 
 Return penalty value for a single eigenvalue λ.
 """
-penalty_eigen(λ::Float64) = abs(λ) < 1 ? abs(λ)/(1-abs(λ)) : 1/eps();
+penalty_eigen(λ::Float64) = abs(λ) < 1 ? abs(λ)/(1-abs(λ)) : Inf;
+penalty_eigen(λ::Complex{Float64}) = abs(λ) < 1 ? abs(λ)/(1-abs(λ)) : Inf;
 
 """
     fmin_uc_models(θ_unbound::FloatVector, lb::FloatVector, ub::FloatVector, transform_id::Array{Int64,1}, model_structure::Function, settings::UCSettings)
@@ -40,15 +41,20 @@ function fmin_uc_models(θ_unbound::FloatVector, lb::FloatVector, ub::FloatVecto
     # Kalman status and settings
     status = KalmanStatus();
     model_instance, model_penalty = model_structure(θ, uc_settings);
-    settings = ImmutableKalmanSettings(model_instance...);
 
-    # Compute loglikelihood for t = 1, ..., T
-    for t=1:size(settings.Y,2)
-        kfilter!(settings, status);
+    if ~isinf(model_penalty)
+        settings = ImmutableKalmanSettings(model_instance...);
+
+        # Compute loglikelihood for t = 1, ..., T
+        for t=1:size(settings.Y,2)
+            kfilter!(settings, status);
+        end
+
+        # Return fmin
+        return -status.loglik + tightness*model_penalty;
+    else
+        return 1/eps();
     end
-
-    # Return fmin
-    return -status.loglik + tightness*model_penalty;
 end
 
 """
@@ -97,7 +103,7 @@ VARIMA model
 VARMA(p,q) representation similar to the form reported in Hamilton (1994) for ARIMA(p,q) models.
 
 # Arguments
-- `θ`: Model parameters (coefficients + variance of the innovation)
+- `θ`: Model parameters
 - `settings`: VARIMASettings struct
 """
 function varma_structure(θ::FloatVector, settings::VARIMASettings)
@@ -116,17 +122,11 @@ function varma_structure(θ::FloatVector, settings::VARIMASettings)
     C = [reshape(ϑ[settings.nnq+1:settings.nnq+settings.nnp], settings.n, settings.np) zeros(settings.n, settings.nr-settings.np);
          Matrix(I, settings.nr-settings.n, settings.nr-settings.n) zeros(settings.nr-settings.n, settings.n)];
 
-    # Initialise VARMA(p,q) var-cov matrix
-    V1 = zeros(settings.n, settings.n);
-
-    # Main diagonal: variances
-    V1[I_n.==1] .= ϑ[settings.nnq+settings.nnp+1:settings.nnq+settings.nnp+settings.n];
-
-    # Out-of-diagonal elements: covariances in the upper triangular part of the var-cov matrix
-    V1[UT_n.==1] .= ϑ[settings.nnq+settings.nnp+settings.n+1:end];
+    # VARMA(p,q) var-cov matrix
+    V1 = Diagonal(ϑ[settings.nnq+settings.nnp+1:settings.nnq+settings.nnp+settings.n]) |> FloatMatrix;
 
     # Transition equation: variance
-    V = Symmetric(cat(dims=[1,2], Symmetric(V1), zeros(settings.nr-settings.n, settings.nr-settings.n)));
+    V = Symmetric(cat(dims=[1,2], V1, zeros(settings.nr-settings.n, settings.nr-settings.n)));
 
     # Companion form for the moving average part
     companion_vma = [B[:,settings.n+1:settings.n+settings.nq];
@@ -148,7 +148,7 @@ end
 Return KalmanSettings for a varima(d,p,q) model with parameters θ.
 
 # Arguments
-- `θ`: Model parameters (coefficients + variance of the innovation)
+- `θ`: Model parameters
 - `settings`: VARIMASettings struct
 
     varima(settings::VARIMASettings, args...)
@@ -193,16 +193,13 @@ end
 
 function varima(settings::VARIMASettings, tightness::Float64, args...)
 
-    # No. covariances
-    n_cov = (settings.n^2-settings.n)/2 |> Int64;
-
     # Starting point
-    θ_starting = 1e-8*ones(settings.nnp+settings.nnq+settings.n+n_cov);
+    θ_starting = 1e-4*ones(settings.nnp+settings.nnq+settings.n);
 
     # Bounds
-    lb = [-0.99*ones(settings.nnp+settings.nnq); 1e-8*ones(settings.n); -Inf*ones(n_cov)];
-    ub = [0.99*ones(settings.nnp+settings.nnq);  Inf*ones(settings.n); Inf*ones(n_cov)];
-    transform_id = [2*ones(settings.nnp+settings.nnq); ones(settings.n); zeros(n_cov)] |> Array{Int64,1};
+    lb = [-0.99*ones(settings.nnp+settings.nnq); 1e-6*ones(settings.n)];
+    ub = [0.99*ones(settings.nnp+settings.nnq);  Inf*ones(settings.n)];
+    transform_id = [2*ones(settings.nnp+settings.nnq); ones(settings.n)] |> Array{Int64,1};
 
     # Estimate the model
     res = Optim.optimize(θ_unbound->fmin_uc_models(θ_unbound, lb, ub, transform_id, varma_structure, settings, tightness), θ_starting, args...);
