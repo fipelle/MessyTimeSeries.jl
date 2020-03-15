@@ -80,13 +80,35 @@ function forecast(settings::KalmanSettings, h::Int64)
     # Initialise Kalman status
     status = KalmanStatus();
 
+    # Compute the period referring to the last observation of each series
+    last_observations = zeros(settings.n) |> Array{Int64,1};
+    for i=1:settings.n
+        last_observations[i] = findall(.~ismissing.(settings.Y[i,:]))[end];
+    end
+
+    # Starting point for the forecast
+    starting_point = minimum(last_observations);
+
     # Filter for t=1,...,T
-    for t=1:size(settings.Y,2)
+    for t=1:settings.T
         kfilter!(settings, status);
     end
 
-    # Return forecast
-    return settings.B*hcat(kforecast(settings, status.X_post, h)...);
+    # Initial forecast: series with a shorter history are forecasted until they match the others
+    fc = zeros(settings.m, settings.T-starting_point+h);
+    if starting_point < settings.T
+        fc[:,1:settings.T-starting_point] = hcat(status.history_X_post[starting_point+1:settings.T]...);
+    end
+
+    # h-steps ahead forecast of the states from last observed point
+    fc[:,settings.T-starting_point+1:end] = hcat(kforecast(settings, status.X_post, h)...);
+
+    # Compute forecast for Y
+    Y_fc = settings.B*fc;
+    Y_fc[last_observations.==settings.T, settings.T-starting_point] .= NaN;
+
+    # Return forecast for Y
+    return Y_fc;
 end
 
 forecast(settings::KalmanSettings, X::FloatVector, h::Int64) = settings.B*hcat(kforecast(settings, X, h)...);
@@ -233,30 +255,48 @@ function forecast(settings::KalmanSettings, h::Int64, varima_settings::VARIMASet
     # VARIMA
     if varima_settings.d > 0
 
-        # Initialise Y_all
-        Y_all = zeros(varima_settings.d, varima_settings.d);
+        Y = zeros(varima_settings.d, varima_settings.n);
 
-        # The first row of Y_all is the data in levels
-        Y_all[1,:] = varima_settings.Y_levels[end-varima_settings.d+1:end];
+        # Loop over each series
+        for i=1:varima_settings.n
 
-        # Differenced data, ex. (1-L)^d * Y_levels
-        for i=1:varima_settings.d-1
-            Y_all[1+i,:] = [NaN * ones(1,i) permutedims(diff(Y_all[i,:]))];
+            # Initialise Y_all
+            Y_all = zeros(varima_settings.d, varima_settings.d);
+
+            # Last observed point
+            last_observation = findall(.~ismissing.(varima_settings.Y_levels[i,:]))[end];
+
+            # The first row of Y_all is the data in levels
+            Y_all[1,:] = varima_settings.Y_levels[i, last_observation-varima_settings.d+1:last_observation];
+
+            # Differenced data, ex. (1-L)^d * Y_levels
+            for j=1:varima_settings.d-1
+                Y_all[1+j,:] = [NaN * ones(1,j) permutedims(diff(Y_all[j,:]))];
+            end
+
+            # Cut Y_all
+            Y[:,i] = permutedims(Y_all[:,end]);
         end
-
-        # Cut Y_all
-        Y_all = Y_all[:,end];
 
         # Initial cumulated forecast
-        fc = cumsum(forecast(settings, h) .+ varima_settings.μ, dims=2);
+        fc_differenced = forecast(settings, h) .+ varima_settings.μ;
+        fc = zeros(size(fc_differenced));
 
         # Loop over d to compute a prediction for the levels
-        for i=varima_settings.d:-1:1
-            fc .+= Y_all[i];
-            if i != 1
-                fc = cumsum(fc, dims=2);
+        for i=1:varima_settings.n
+            starting_point = findall(.~isnan.(fc_differenced[i,:]))[1];
+            fc[i,starting_point:end] .= cumsum(fc_differenced[i,starting_point:end], dims=2);
+
+            for j=varima_settings.d:-1:1
+                fc[i,starting_point:end] .+= Y[j,i];
+                if j != 1
+                    fc[i,starting_point:end] = cumsum(fc[i,starting_point:end]);
+                end
             end
         end
+
+        # Insert NaNs
+        fc[isnan.(fc_differenced)] .= NaN;
 
     # VARMA
     else
