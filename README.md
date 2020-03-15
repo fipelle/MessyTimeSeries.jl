@@ -134,10 +134,10 @@ for hz=1:max_hz
 end
 
 # Generate plot
-p1 = plot(date_ext, [Y[1,:]; NaN*ones(max_hz)], label="Data", color=RGB(0,0,200/255),
-                 xtickfont=font(8, "Helvetica Neue"), ytickfont=font(8, "Helvetica Neue"),
-                 title="INDPRO", titlefont=font(10, "Helvetica Neue"), framestyle=:box,
-                 legend=:right, size=(800,250), dpi=300, margin = 5mm);
+p_arima = plot(date_ext, [Y[1,:]; NaN*ones(max_hz)], label="Data", color=RGB(0,0,200/255),
+               xtickfont=font(8, "Helvetica Neue"), ytickfont=font(8, "Helvetica Neue"),
+               title="INDPRO", titlefont=font(10, "Helvetica Neue"), framestyle=:box,
+               legend=:right, size=(800,250), dpi=300, margin = 5mm);
 
 plot!(date_ext, [NaN*ones(length(date_ext)-size(fc,2)); fc[1,:]], label="Forecast", color=RGB(0,0,200/255), line=:dot)
 ```
@@ -248,11 +248,12 @@ The following examples show how to perform a standard univariate state-space dec
 
 The following examples use non-seasonally adjusted (NSA) data that can be downloaded using
 ```julia
-# Download Industrial Production Index, Log-levels (monthly, SA)
-fred_df = get_data(f, "IPGMFN", observation_start="1984-01-01", units="log");
+# Download data of interest
+Y_df = download_fred_vintage(["IPGMFN"], ["log"]);
 
-# Store data in Array{Float64,2}
-Y = permutedims(fred_df.data.value);
+# Convert to JArray{Float64}
+Y = Y_df[:,2:end] |> JArray{Float64};
+Y = permutedims(Y);
 ```
 
 #### Kalman filter
@@ -396,22 +397,24 @@ ksettings, kstatus = llt_seasonal_noise(θ_bound, Y, 12);
 history_Xs, history_Ps, X0s, P0s = ksmoother(ksettings, kstatus);
 
 # Data vs trend
-p2 = plot(fred_df.data.date, Y', label="Data", color=RGB(185/255,185/255,185/255),
-          xtickfont=font(8, "Helvetica Neue"), ytickfont=font(8, "Helvetica Neue"),
-          framestyle=:box, legend=:right, size=(800,250), dpi=300)
+p_trend = plot(Y_df[!,:date], permutedims(Y), label="Data", color=RGB(185/255,185/255,185/255),
+               xtickfont=font(8, "Helvetica Neue"), ytickfont=font(8, "Helvetica Neue"),
+               title="IPGMFN", titlefont=font(10, "Helvetica Neue"), framestyle=:box,
+               legend=:right, size=(800,250), dpi=300, margin = 5mm);
 
-plot!(fred_df.data.date, hcat(history_Xs...)[1,:], label="Trend", color=RGB(0,0,200/255))
+plot!(Y_df[!,:date], hcat(history_Xs...)[1,:], label="Trend", color=RGB(0,0,200/255))
 ```
-<img src="./img/p2.svg">
+<img src="./img/ks_trend.svg">
 
 and
 ```julia
 # Slope (of the trend)
-p3 = plot(fred_df.data.date, hcat(history_Xs...)[2,:], label="Slope", color=RGB(0,0,200/255),
-          xtickfont=font(8, "Helvetica Neue"), ytickfont=font(8, "Helvetica Neue"),
-          framestyle=:box, legend=:right, size=(800,250), dpi=300)
+p_slope = plot(Y_df[!,:date], hcat(history_Xs...)[2,:], label="Slope", color=RGB(0,0,200/255),
+               xtickfont=font(8, "Helvetica Neue"), ytickfont=font(8, "Helvetica Neue"),
+               titlefont=font(10, "Helvetica Neue"), framestyle=:box,
+               legend=:right, size=(800,250), dpi=300, margin = 5mm)
 ```
-<img src="./img/p3.svg">
+<img src="./img/ks_slope.svg">
 
 ## Bibliography
 * R. H. Shumway and D. S. Stoffer. An approach to time series smoothing and forecasting using the EM algorithm. Journal of time series analysis, 3(4):253–264, 1982.
