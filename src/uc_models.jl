@@ -105,8 +105,10 @@ function forecast(settings::KalmanSettings, h::Int64)
 
     # Compute forecast for Y
     Y_fc = settings.B*fc;
-    Y_fc[last_observations.==settings.T, settings.T-starting_point] .= NaN;
-
+    if settings.T-starting_point > 0
+        Y_fc[last_observations.==settings.T, settings.T-starting_point] .= NaN;
+    end
+    
     # Return forecast for Y
     return Y_fc;
 end
@@ -173,14 +175,14 @@ Return KalmanSettings for a varima(d,p,q) model with parameters θ.
 - `θ`: Model parameters
 - `settings`: VARIMASettings struct
 
-    varima(settings::VARIMASettings, args...)
+    varima(settings::VARIMASettings, args...; tightness::Float64=1.0)
 
 Estimate varima(d,p,q) model.
 
 # Arguments
 - `settings`: VARIMASettings struct
-- `tightness`: Controls the strength of the penalty for the non-causal / non-invertible case
 - `args`: Arguments for Optim.optimize
+- `tightness`: Controls the strength of the penalty for the non-causal / non-invertible case (default = 1)
 """
 function varima(θ::FloatVector, settings::VARIMASettings)
 
@@ -213,7 +215,7 @@ function varima(θ::FloatVector, settings::VARIMASettings)
     return output
 end
 
-function varima(settings::VARIMASettings, tightness::Float64, args...)
+function varima(settings::VARIMASettings, args...; tightness::Float64=1.0)
 
     # Starting point
     θ_starting = 1e-4*ones(settings.nnp+settings.nnq+settings.n);
@@ -239,6 +241,13 @@ function varima(settings::VARIMASettings, tightness::Float64, args...)
     # Return output
     return varima(θ_minimizer, settings);
 end
+
+"""
+    arima(settings::VARIMASettings, args...; tightness::Float64=1.0)
+
+Define an alias of the varima function for arima models.
+"""
+arima(settings::VARIMASettings, args...; tightness::Float64=1.0) = varima(settings, args..., tightness=tightness);
 
 """
     forecast(settings::KalmanSettings, h::Int64, varima_settings::VARIMASettings)

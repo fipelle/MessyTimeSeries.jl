@@ -230,5 +230,9 @@ function VARIMASettings(Y_levels::Union{FloatMatrix, JArray{Float64,2}}, d::Int6
     return VARIMASettings(Y_levels, Y, μ, n, d, p, q, n*r, n*p, n*q, (n^2)*p, (n^2)*q);
 end
 
-# ARIMASettings constructor
+"""
+    ARIMASettings(...)
+
+Define an alias of VARIMASettings for arima models.
+"""
 ARIMASettings(Y_levels::Union{FloatMatrix, JArray{Float64,2}}, d::Int64, p::Int64, q::Int64) = VARIMASettings(Y_levels, d, p, q);
