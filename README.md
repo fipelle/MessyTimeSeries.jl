@@ -414,7 +414,7 @@ p_slope = plot(Y_df[!,:date], hcat(history_Xs...)[2,:], label="Slope", color=RGB
                titlefont=font(10, "Helvetica Neue"), framestyle=:box,
                legend=:right, size=(800,250), dpi=300, margin = 5mm)
 ```
-<img src="./img/ks_slope.svg">
+<img src="./img/ks_slope_trend.svg">
 
 ## Bibliography
 * R. H. Shumway and D. S. Stoffer. An approach to time series smoothing and forecasting using the EM algorithm. Journal of time series analysis, 3(4):253–264, 1982.
