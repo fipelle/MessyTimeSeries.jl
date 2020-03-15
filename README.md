@@ -102,7 +102,7 @@ arima_settings = ARIMASettings(Y, d, p, q);
 arima_out = arima(arima_settings, NelderMead(), Optim.Options(iterations=10000, f_tol=1e-2, x_tol=1e-2, g_tol=1e-2, show_trace=true, show_every=500));
 ```
 
-Please note that in the estimation process the underlying ARMA(p,q) model is constrained to be causal and invertible in the past, for all candidate parameters, by default. This behaviour can be controlled via the "tightness" keyword argument of the arima function.
+Please note that in the estimation process of the underlying ARMA(p,q), the model is constrained to be causal and invertible in the past by default, for all candidate parameters. This behaviour can be controlled via the "tightness" keyword argument of the arima function.
 
 
 #### Forecast
@@ -142,6 +142,88 @@ p1 = plot(date_ext, [Y[1,:]; NaN*ones(max_hz)], label="Data", color=RGB(0,0,200/
 plot!(date_ext, [NaN*ones(length(date_ext)-size(fc,2)); fc[1,:]], label="Forecast", color=RGB(0,0,200/255), line=:dot)
 ```
 <img src="./img/arima.svg">
+
+
+### VARIMA models
+
+#### Data
+
+Use the following lines of code to download the data for the examples on the VARIMA models:
+```julia
+# Tickers for data of interest
+tickers = ["INDPRO", "PAYEMS", "CPIAUCSL"];
+
+# Transformations for data of interest
+transformations = ["log", "log", "log"];
+
+# Download data of interest
+Y_df = download_fred_vintage(tickers, transformations);
+
+# Convert to JArray{Float64}
+Y = Y_df[:,2:end] |> JArray{Float64};
+Y = permutedims(Y);
+```
+
+#### Estimation
+
+Suppose that we want to estimate a VARIMA(1,1,1) model. TSAnalysis.jl provides a simple interface for that:
+```julia
+# Estimation settings for a VARIMA(1,1,1)
+d = 1;
+p = 1;
+q = 1;
+varima_settings = VARIMASettings(Y, d, p, q);
+
+# Estimation
+varima_out = varima(varima_settings, NelderMead(), Optim.Options(iterations=20000, f_tol=1e-2, x_tol=1e-2, g_tol=1e-2, show_trace=true, show_every=500));
+```
+
+Please note that in the estimation process of the underlying VARMA(p,q), the model is constrained to be causal and invertible in the past by default, for all candidate parameters. This behaviour can be controlled via the "tightness" keyword argument of the varima function.
+
+
+#### Forecast
+
+The standard forecast function generates prediction for the data in levels. In the example above, this implies that the standard forecast would be referring to data in log-levels:
+```julia
+# 12-step ahead forecast
+max_hz = 12;
+fc = forecast(varima_out, max_hz, varima_settings);
+```
+
+This can be easily plotted via
+```julia
+# Extend date vector
+date_ext = Y_df[!,:date] |> Array{Date,1};
+
+for hz=1:max_hz
+    last_month = month(date_ext[end]);
+    last_year = year(date_ext[end]);
+
+    if last_month == 12
+        last_month = 1;
+        last_year += 1;
+    else
+        last_month += 1;
+    end
+
+    push!(date_ext, Date("01/$(last_month)/$(last_year)", "dd/mm/yyyy"))
+end
+
+# Generate plot
+figure = Array{Any,1}(undef, varima_settings.n)
+
+for i=1:varima_settings.n
+    figure[i] = plot(date_ext, [Y[i,:]; NaN*ones(max_hz)], label="Data", color=RGB(0,0,200/255),
+                     xtickfont=font(8, "Helvetica Neue"), ytickfont=font(8, "Helvetica Neue"),
+                     title=tickers[i], titlefont=font(10, "Helvetica Neue"), framestyle=:box,
+                     legend=:right, size=(800,250), dpi=300, margin = 5mm);
+
+    plot!(date_ext, [NaN*ones(length(date_ext)-size(fc,2)); fc[i,:]], label="Forecast", color=RGB(0,0,200/255), line=:dot);
+end
+```
+<img src="./img/varima_p1.svg">
+<img src="./img/varima_p2.svg">
+<img src="./img/varima_p3.svg">
 
 
 ### Kalman filter and smoother
