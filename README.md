@@ -221,8 +221,23 @@ for i=1:varima_settings.n
     plot!(date_ext, [NaN*ones(length(date_ext)-size(fc,2)); fc[i,:]], label="Forecast", color=RGB(0,0,200/255), line=:dot);
 end
 ```
+
+Industrial production (log-levels)
+```julia
+figure[1]
+```
 <img src="./img/varima_p1.svg">
+
+Non-farm payrolls (log-levels)
+```julia
+figure[2]
+```
 <img src="./img/varima_p2.svg">
+
+Headline CPI (log-levels)
+```julia
+figure[3]
+```
 <img src="./img/varima_p3.svg">
 
 
