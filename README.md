@@ -141,7 +141,7 @@ p1 = plot(date_ext, [Y[1,:]; NaN*ones(max_hz)], label="Data", color=RGB(0,0,200/
 
 plot!(date_ext, [NaN*ones(length(date_ext)-size(fc,2)); fc[1,:]], label="Forecast", color=RGB(0,0,200/255), line=:dot)
 ```
-<img src="./img/p1.svg">
+<img src="./img/arima.svg">
 
 
 ### Kalman filter and smoother
