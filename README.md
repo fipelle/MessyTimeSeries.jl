@@ -90,7 +90,7 @@ Y = permutedims(Y);
 
 #### Estimation
 
-Suppose that we want to estimate an ARIMA(1,1,1) model for the Industrial Production Index. TSAnalysis.jl provides a simple interface for that:
+Suppose that we want to estimate an ARIMA(1,1,1) model for the Industrial Production Index. TSAnalysis provides a simple interface for that:
 ```julia
 # Estimation settings for an ARIMA(1,1,1)
 d = 1;
@@ -166,7 +166,7 @@ Y = permutedims(Y);
 
 #### Estimation
 
-Suppose that we want to estimate a VARIMA(1,1,1) model. TSAnalysis.jl provides a simple interface for that:
+Suppose that we want to estimate a VARIMA(1,1,1) model. ```TSAnalysis```.jl provides a simple interface for that:
 ```julia
 # Estimation settings for a VARIMA(1,1,1)
 d = 1;
@@ -244,7 +244,7 @@ figure[3]
 ### Kalman filter and smoother
 
 #### Data
-The following examples show how to perform a standard univariate state-space decomposition (local linear trend + seasonal + noise decomposition) using the implementations of the Kalman filter and smoother in TSAnalysis.
+The following examples show how to perform a standard univariate state-space decomposition (local linear trend + seasonal + noise decomposition) using the implementations of the Kalman filter and smoother in ```TSAnalysis```.
 
 The following examples use non-seasonally adjusted (NSA) data that can be downloaded using
 ```julia
@@ -322,7 +322,7 @@ history_Xs, history_Ps, X0s, P0s = ksmoother(ksettings, kstatus);
 ```
 
 ### Estimation of state-space models
-The estimation of state-space models for which TSAnalysis does not provide support yet can be performed by using ```TSAnalysis``` and ```Optim``` jointly. The data for the following examples is the same used for the previous section.
+The estimation of state-space models for which ```TSAnalysis``` does not provide support yet can be performed by using ```TSAnalysis``` and ```Optim``` jointly. The data for the following examples is the same used for the previous section.
 
 The state-space model described the previous section can be estimated following the steps below.
 
