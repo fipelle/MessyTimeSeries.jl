@@ -131,3 +131,35 @@ end
     # Run tests
     varima_test(Y, d, p, q, benchmark_data);
 end
+
+@testset "varima" begin
+
+    # Load data
+    Y = read_test_input("./input/varima/data");
+
+    # Settings for ARMA(1,1)
+    d = 1;
+    p = 1;
+    q = 1;
+
+    # Correct estimates: initial conditions
+    benchmark_X0 = read_test_input("./input/varima/benchmark_X0");
+    benchmark_P0 = read_test_input("./input/varima/benchmark_P0");
+
+    # Correct estimates: observation equation
+    benchmark_B = read_test_input("./input/varima/benchmark_B");
+    benchmark_R = read_test_input("./input/varima/benchmark_R");
+
+    # Correct estimates: transition equation
+    benchmark_C = read_test_input("./input/varima/benchmark_C");
+    benchmark_V = read_test_input("./input/varima/benchmark_V");
+
+    # Correct estimates: forecast
+    benchmark_fc = read_test_input("./input/varima/benchmark_fc");
+
+    # Benchmark data
+    benchmark_data = (benchmark_X0, benchmark_P0, benchmark_B, benchmark_R, benchmark_C, benchmark_V, benchmark_fc);
+
+    # Run tests
+    varima_test(Y, d, p, q, benchmark_data);
+end
