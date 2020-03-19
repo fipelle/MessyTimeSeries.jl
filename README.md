@@ -66,7 +66,7 @@ end
 Additional examples are included in the ```/examples/``` folder.
 
 
-## List of examples
+## Examples
 - [ARIMA models](#arima-models)
 - [VARIMA models](#varima-models)
 - [Kalman filter and smoother](#kalman-filter-and-smoother)
