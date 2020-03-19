@@ -1,3 +1,3 @@
 include("./tools.jl");
 include("./kalman.jl");
-include("./arima.jl");
+include("./varima.jl");

@@ -1,9 +1,9 @@
 """
-    arima_test(arima_settings::ARIMASettings, benchmark_data::Tuple)
+    varima_test(Y::Array{Float64,2}, d::Int64, p::Int64, q::Int64, benchmark_data::Tuple)
 
-Run a series of tests to check whether the arima functions in uc_models.jl work.
+Run a series of tests to check whether the varima functions in uc_models.jl work.
 """
-function arima_test(Y::Array{Float64,2}, d::Int64, p::Int64, q::Int64, benchmark_data::Tuple)
+function varima_test(Y::Array{Float64,2}, d::Int64, p::Int64, q::Int64, benchmark_data::Tuple)
 
     # Benchmark data
     benchmark_X0, benchmark_P0, benchmark_B, benchmark_R, benchmark_C, benchmark_V, benchmark_fc = benchmark_data;
@@ -13,11 +13,15 @@ function arima_test(Y::Array{Float64,2}, d::Int64, p::Int64, q::Int64, benchmark
     @test arima_settings.d == d;
     @test arima_settings.p == p;
     @test arima_settings.q == q;
-    @test arima_settings.r == max(p, q+1);
+    @test arima_settings.n == size(Y,1);
+    @test arima_settings.nr == size(Y,1)*max(p, q+1);
+    @test arima_settings.np == size(Y,1)*p;
+    @test arima_settings.nq == size(Y,1)*q;
+    @test arima_settings.nnp == size(Y,1)^2*p;
+    @test arima_settings.nnq == size(Y,1)^2*q;
 
     # Estimate parameters
-    arima_out = varima(arima_settings, 1/(arima_settings.np+arima_settings.nq), NelderMead(),
-                       Optim.Options(iterations=10000, f_tol=1e-4, x_tol=1e-4, show_trace=true, show_every=500));
+    arima_out = arima(arima_settings, NelderMead(), Optim.Options(iterations=10000, f_tol=1e-2, x_tol=1e-2, g_tol=1e-2, show_trace=true, show_every=500));
 
     # Test on the parameters
     @test round.(arima_out.B, digits=10) == benchmark_B;
@@ -61,7 +65,7 @@ end
     benchmark_data = (benchmark_X0, benchmark_P0, benchmark_B, benchmark_R, benchmark_C, benchmark_V, benchmark_fc);
 
     # Run tests
-    arima_test(Y, d, p, q, benchmark_data);
+    varima_test(Y, d, p, q, benchmark_data);
 end
 
 @testset "arima" begin
@@ -93,5 +97,5 @@ end
     benchmark_data = (benchmark_X0, benchmark_P0, benchmark_B, benchmark_R, benchmark_C, benchmark_V, benchmark_fc);
 
     # Run tests
-    arima_test(Y, d, p, q, benchmark_data);
+    varima_test(Y, d, p, q, benchmark_data);
 end
