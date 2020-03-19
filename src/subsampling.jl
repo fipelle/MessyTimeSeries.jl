@@ -1,17 +1,22 @@
+#=
+--------------------------------------------------------------------------------------------------------------------------------
+Subsampling: Jackknife
+--------------------------------------------------------------------------------------------------------------------------------
+=#
+
 """
     block_jackknife(Y::JArray{Float64,2}, subsample::Float64)
 
-Generate block jackknife samples as in Kunsch (1989).
+Generate block jackknife (Kunsch, 1989) samples. This implementation is described in Pellegrino (2020).
 
-This technique subsamples a time series dataset by removing, in turn, all the blocks of consecutive observations
-with a given size.
+This technique subsamples a time series dataset by removing, in turn, all the blocks of consecutive observations with a given size.
 
 # Arguments
-- `Y`: observed measurements (`nxT`), where `n` and `T` are the number of series and observations.
-- `subsample`: block size as a percentage of the original sample size. It is bounded between 0 and 1.
+- `Y`: Observed measurements (`nxT`), where `n` and `T` are the number of series and observations.
+- `subsample`: Block size as a percentage of the original sample size. It is bounded between 0 and 1.
 
 # References
-Kunsch (1989) and Pellegrino (2020)
+Kunsch (1989) and Pellegrino (2020).
 """
 function block_jackknife(Y::JArray{Float64,2}, subsample::Float64)
 
@@ -51,7 +56,7 @@ end
 """
     optimal_d(n::Int64, T::Int64)
 
-Select the optimal value for d.
+Select the optimal value for d. See artificial_jackknife (...) for more details on d.
 
 # Arguments
 - `n`: Number of series
@@ -93,17 +98,16 @@ end
 Generate artificial jackknife samples as in Pellegrino (2020).
 
 The artificial delete-d jackknife is an extension of the delete-d jackknife for dependent data problems.
-This technique replaces the actual data removal step with a fictitious deletion, which consists of
-imposing `d`-dimensional (artificial) patterns of missing observations to the data. This approach
-does not alter the data order nor destroy the correlation structure.
+- This technique replaces the actual data removal step with a fictitious deletion, which consists of imposing `d`-dimensional (artificial) patterns of missing observations to the data.
+- This approach does not alter the data order nor destroy the correlation structure.
 
 # Arguments
-- `Y`: observed measurements (`nxT`), where `n` and `T` are the number of series and observations.
+- `Y`: Observed measurements (`nxT`), where `n` and `T` are the number of series and observations.
 - `subsample`: `d` as a percentage of the original sample size. It is bounded between 0 and 1.
-- `max_samples`: if `C(n*T,d)` is large, artificial_jackknife would generate `max_samples` jackknife samples.
+- `max_samples`: If `C(n*T,d)` is large, artificial_jackknife would generate `max_samples` jackknife samples.
 
 # References
-Pellegrino (2020)
+Pellegrino (2020).
 """
 function artificial_jackknife(Y::JArray{Float64,2}, subsample::Float64, max_samples::Int64)
 
@@ -171,4 +175,121 @@ function artificial_jackknife(Y::JArray{Float64,2}, subsample::Float64, max_samp
 
     # Return jackknife_data
     return jackknife_data;
+end
+
+#=
+--------------------------------------------------------------------------------------------------------------------------------
+Subsampling: Bootstrap
+--------------------------------------------------------------------------------------------------------------------------------
+=#
+
+"""
+    moving_block_bootstrap(Y::JArray{Float64,2}, subsample::Float64, samples::Int64)
+
+Generate moving block bootstrap samples.
+
+The moving block bootstrap randomly subsamples a time series into ordered and overlapped blocks of consecutive observations.
+
+# Arguments
+- `Y`: Observed measurements (`nxT`), where `n` and `T` are the number of series and observations.
+- `subsample`: Block size as a percentage of the original sample size. It is bounded between 0 and 1.
+- `samples`: Number of bootstrap samples.
+
+# References
+Kunsch (1989) and Liu and Singh (1992).
+"""
+function moving_block_bootstrap(Y::JArray{Float64,2}, subsample::Float64, samples::Int64)
+
+    # Check inputs
+    check_bounds(subsample, 0, 1);
+
+    # Dimensions
+    n, T = size(Y);
+
+    # Block size
+    block_size = Int64(ceil(subsample*T));
+    if block_size == 0
+        error("subsample is too small!");
+    end
+
+    # Initialise bootstrap_data
+    bootstrap_data = JArray{Float64,3}(undef, n, block_size, samples);
+
+    # Loop over j=1, ..., samples
+    for j=1:samples
+        ind_j = rand(1:T-block_size+1);
+        bootstrap_data[:, :, j] .= Y[:, ind_j:ind_j+block_size-1];
+    end
+
+    # Return bootstrap_data
+    return bootstrap_data;
+end
+
+"""
+    stationary_block_bootstrap(Y::JArray{Float64,2}, subsample::Float64, samples::Int64)
+
+Generate stationary block bootstrap samples.
+
+The stationary bootstrap is similar to the block bootstrap proposed in independently in Kunsch (1989) and Liu and Singh (1992).
+
+There are two main differences:
+- The blocks have random length
+- In order to achieve stationarity, the stationary (block) bootstrap "wraps" the data around in a "circle" so that the first observation follows the last.
+
+Note: Block size is exponentially distributed with mean `Int64(ceil(subsample*T))`.
+
+# Arguments
+- `Y`: Observed measurements (`nxT`), where `n` and `T` are the number of series and observations.
+- `subsample`: Average block size as a percentage of the original sample size. It is bounded between 0 and 1.
+- `samples`: Number of bootstrap samples.
+
+# References
+Politis and Romano (1994).
+"""
+function stationary_block_bootstrap(Y::JArray{Float64,2}, subsample::Float64, samples::Int64)
+
+    # Check inputs
+    check_bounds(subsample, 0, 1);
+
+    # Dimensions
+    n, T = size(Y);
+
+    # Block length is exponentially distributed with mean
+    avg_block_size = Int64(ceil(subsample*T));
+    if block_size == 0
+        error("subsample is too small!");
+    end
+
+    # Initialise bootstrap_data
+    bootstrap_data = JArray{Float64,3}(undef, n, T, samples);
+
+    # Loop over j=1, ..., samples
+    for j=1:samples
+
+        # Merge multiple blocks of random size
+        ind_j    = zeros(T) |> Array{Int64,1};
+        ind_j[1] = rand(1:T);
+
+        # Loop over t=2,...,T
+        for t=2:T
+
+            # Let ind_j[t] be picked at random
+            if rand() < 1/avg_block_size;
+                ind_j[t] = rand(1:T);
+
+            # Let ind_j[t] be ind_j[t-1] + 1
+            else
+                ind_j[t] = ind_j[t-1] + 1;
+                if ind_j[t] > T
+                    ind_j[t] = 1;
+                end
+            end
+        end
+
+        # Generate j-th bootstrap sample
+        bootstrap_data[:, :, j] .= Y[:, ind_j];
+    end
+
+    # Return bootstrap_data
+    return bootstrap_data;
 end
