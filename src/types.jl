@@ -171,29 +171,45 @@ UC models: structures
 abstract type UCSettings end
 
 """
-    ARIMASettings(...)
+    VARIMASettings(...)
 
-Define an immutable structure to manage ARIMA specifications.
+Define an immutable structure to manage VARIMA specifications.
 
 # Arguments
 - `Y_levels`: Observed measurements (`nxT`) - in levels
 - `Y`: Observed measurements (`nxT`) - differenced and demeaned
+- `μ`: Sample average (per series)
+- `n`: Number of series
 - `d`: Degree of differencing
 - `p`: Order of the autoregressive model
 - `q`: Order of the moving average model
+- `nr`: n*max(p, q+1)
+- `np`: n*p
+- `nq`: n*q
+- `nnp`: (n^2)*p
+- `nnq`: (n^2)*q
 """
-struct ARIMASettings <: UCSettings
+struct VARIMASettings <: UCSettings
     Y_levels::Union{FloatMatrix, JArray{Float64,2}}
     Y::Union{FloatMatrix, JArray{Float64,2}}
-    μ::Float64
-    r::Int64
+    μ::FloatVector
+    n::Int64
     d::Int64
     p::Int64
     q::Int64
+    nr::Int64
+    np::Int64
+    nq::Int64
+    nnp::Int64
+    nnq::Int64
 end
 
-# ARIMASettings constructor
-function ARIMASettings(Y_levels::Union{FloatMatrix, JArray{Float64,2}}, d::Int64, p::Int64, q::Int64)
+# VARIMASettings constructor
+function VARIMASettings(Y_levels::Union{FloatMatrix, JArray{Float64,2}}, d::Int64, p::Int64, q::Int64)
+
+    # Initialise
+    n = size(Y_levels, 1);
+    r = max(p, q+1);
 
     # Differenciate data
     Y = copy(Y_levels);
@@ -205,11 +221,18 @@ function ARIMASettings(Y_levels::Union{FloatMatrix, JArray{Float64,2}}, d::Int64
     end
 
     # Mean
-    μ = mean(Y);
+    μ = mean_skipmissing(Y)[:,1];
 
     # Demean data
     Y = demean(Y);
 
-    # ARIMASettings
-    return ARIMASettings(Y_levels, Y, μ, max(p, q+1), d, p, q);
+    # VARIMASettings
+    return VARIMASettings(Y_levels, Y, μ, n, d, p, q, n*r, n*p, n*q, (n^2)*p, (n^2)*q);
 end
+
+"""
+    ARIMASettings(...)
+
+Define an alias of VARIMASettings for arima models.
+"""
+ARIMASettings(Y_levels::Union{FloatMatrix, JArray{Float64,2}}, d::Int64, p::Int64, q::Int64) = VARIMASettings(Y_levels, d, p, q);
