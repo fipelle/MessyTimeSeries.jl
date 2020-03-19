@@ -67,11 +67,10 @@ Additional examples are included in the ```/examples/``` folder.
 
 
 ## List of examples
-- [State space models](#state-space-models)
-  - [ARIMA models](#arima-models)
-  - [VARIMA models](#varima-models)
-  - [Kalman filter and smoother](#kalman-filter-and-smoother)
-  - [Estimation of state-space models](#estimation-of-state-space-models)
+- [ARIMA models](#arima-models)
+- [VARIMA models](#varima-models)
+- [Kalman filter and smoother](#kalman-filter-and-smoother)
+- [Estimation of state-space models](#estimation-of-state-space-models)
 
 
 ### ARIMA models
