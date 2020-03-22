@@ -11,6 +11,7 @@ module TSAnalysis
     include("$local_path/types.jl");
     include("$local_path/methods.jl");
     include("$local_path/kalman.jl");
+    include("$local_path/subsampling.jl");
     include("$local_path/uc_models.jl");
 
     # Export types
@@ -24,5 +25,5 @@ module TSAnalysis
 
     # Export functions
     export kfilter!, kforecast, ksmoother, fmin_uc_models, arima, varima, forecast,
-           block_jackknife, optimal_d, artificial_jackknife;
+           block_jackknife, optimal_d, artificial_jackknife, moving_block_bootstrap, stationary_block_bootstrap;
 end

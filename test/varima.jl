@@ -3,7 +3,7 @@
 
 Run a series of tests to check whether the varima functions in uc_models.jl work.
 """
-function varima_test(Y::Array{Float64,2}, d::Int64, p::Int64, q::Int64, benchmark_data::Tuple)
+function varima_test(Y::JArray{Float64,2}, d::Int64, p::Int64, q::Int64, benchmark_data::Tuple)
 
     # Benchmark data
     benchmark_X0, benchmark_P0, benchmark_B, benchmark_R, benchmark_C, benchmark_V, benchmark_fc = benchmark_data;
