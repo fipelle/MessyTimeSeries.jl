@@ -217,7 +217,11 @@ function moving_block_bootstrap(Y::Union{FloatMatrix, JArray{Float64,2}}, subsam
 
     # Loop over j=1, ..., samples
     for j=1:samples
+
+        # Starting point for the moving block
         ind_j = rand(1:T-block_size+1);
+
+        # Bootstrap data
         bootstrap_data[:, :, j] .= Y[:, ind_j:ind_j+block_size-1];
     end
 
@@ -256,7 +260,7 @@ function stationary_block_bootstrap(Y::Union{FloatMatrix, JArray{Float64,2}}, su
 
     # Block length is exponentially distributed with mean
     avg_block_size = Int64(ceil(subsample*T));
-    if block_size == 0
+    if avg_block_size == 0
         error("subsample is too small!");
     end
 
@@ -279,9 +283,10 @@ function stationary_block_bootstrap(Y::Union{FloatMatrix, JArray{Float64,2}}, su
 
             # Let ind_j[t] be ind_j[t-1] + 1
             else
-                ind_j[t] = ind_j[t-1] + 1;
-                if ind_j[t] > T
+                if ind_j[t-1] == T
                     ind_j[t] = 1;
+                else
+                    ind_j[t] = ind_j[t-1] + 1;
                 end
             end
         end
