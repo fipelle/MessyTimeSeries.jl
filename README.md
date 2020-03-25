@@ -1,5 +1,5 @@
 # TSAnalysis.jl
-TSAnalysis.jl includes basic tools for time series analysis, compatible with incomplete data.
+```TSAnalysis``` includes basic tools for time series analysis, compatible with incomplete data.
 
 ```julia
 import Pkg;
@@ -10,7 +10,7 @@ Pkg.add("TSAnalysis")
 
 The Kalman filter and smoother included in this package use symmetric matrices (via ```LinearAlgebra```). This is particularly beneficial for the stability and speed of estimation algorithms (e.g., the EM algorithm in Shumway and Stoffer, 1982), and to handle high-dimensional forecasting problems.
 
-For the examples below, I used economic data from FRED (https://fred.stlouisfed.org/), which is accessed via the ```FredData``` package. The dependencies for the examples can be installed via:
+For the examples below, I used economic data from FRED (https://fred.stlouisfed.org/) downloaded via the ```FredData``` package. The dependencies for the examples can be installed via:
 
 ```julia
 import Pkg;
@@ -63,14 +63,13 @@ function download_fred_vintage(tickers::Array{String,1}, transformations::Array{
 end
 ```
 
-Additional examples are included in the ```/examples/``` folder.
-
 
 ## Examples
 - [ARIMA models](#arima-models)
 - [VARIMA models](#varima-models)
 - [Kalman filter and smoother](#kalman-filter-and-smoother)
 - [Estimation of state-space models](#estimation-of-state-space-models)
+- [Bootstrap and jackknife subsampling](#subsampling)
 
 
 ### ARIMA models
@@ -89,7 +88,7 @@ Y = permutedims(Y);
 
 #### Estimation
 
-Suppose that we want to estimate an ARIMA(1,1,1) model for the Industrial Production Index. TSAnalysis provides a simple interface for that:
+Suppose that we want to estimate an ARIMA(1,1,1) model for the Industrial Production Index. ```TSAnalysis``` provides a simple interface for that:
 ```julia
 # Estimation settings for an ARIMA(1,1,1)
 d = 1;
@@ -101,7 +100,7 @@ arima_settings = ARIMASettings(Y, d, p, q);
 arima_out = arima(arima_settings, NelderMead(), Optim.Options(iterations=10000, f_tol=1e-2, x_tol=1e-2, g_tol=1e-2, show_trace=true, show_every=500));
 ```
 
-Please note that in the estimation process of the underlying ARMA(p,q), the model is constrained to be causal and invertible in the past by default, for all candidate parameters. This behaviour can be controlled via the "tightness" keyword argument of the arima function.
+Please note that in the estimation process of the underlying ARMA(p,q), the model is constrained to be causal and invertible in the past by default, for all candidate parameters. This behaviour can be controlled via the ```tightness``` keyword argument of the ```arima``` function.
 
 
 #### Forecast
@@ -165,7 +164,7 @@ Y = permutedims(Y);
 
 #### Estimation
 
-Suppose that we want to estimate a VARIMA(1,1,1) model. ```TSAnalysis```.jl provides a simple interface for that:
+Suppose that we want to estimate a VARIMA(1,1,1) model. This can be done using:
 ```julia
 # Estimation settings for a VARIMA(1,1,1)
 d = 1;
@@ -177,7 +176,7 @@ varima_settings = VARIMASettings(Y, d, p, q);
 varima_out = varima(varima_settings, NelderMead(), Optim.Options(iterations=20000, f_tol=1e-2, x_tol=1e-2, g_tol=1e-2, show_trace=true, show_every=500));
 ```
 
-Please note that in the estimation process of the underlying VARMA(p,q), the model is constrained to be causal and invertible in the past by default, for all candidate parameters. This behaviour can be controlled via the "tightness" keyword argument of the varima function.
+Please note that in the estimation process of the underlying VARMA(p,q), the model is constrained to be causal and invertible in the past by default, for all candidate parameters. This behaviour can be controlled via the ```tightness``` keyword argument of the ```varima``` function.
 
 
 #### Forecast
@@ -243,9 +242,7 @@ figure[3]
 ### Kalman filter and smoother
 
 #### Data
-The following examples show how to perform a standard univariate state-space decomposition (local linear trend + seasonal + noise decomposition) using the implementations of the Kalman filter and smoother in ```TSAnalysis```.
-
-The following examples use non-seasonally adjusted (NSA) data that can be downloaded using
+The following examples show how to perform a standard univariate state-space decomposition (local linear trend + seasonal + noise decomposition) using the implementations of the Kalman filter and smoother in ```TSAnalysis```. These examples use non-seasonally adjusted (NSA) data that can be downloaded via:
 ```julia
 # Download data of interest
 Y_df = download_fred_vintage(["IPGMFN"], ["log"]);
@@ -321,9 +318,9 @@ history_Xs, history_Ps, X0s, P0s = ksmoother(ksettings, kstatus);
 ```
 
 ### Estimation of state-space models
-The estimation of state-space models for which ```TSAnalysis``` does not provide support yet can be performed by using ```TSAnalysis``` and ```Optim``` jointly. The data for the following examples is the same used for the previous section.
+State-space models without a high-level interface can be estimated using ```TSAnalysis``` and ```Optim``` jointly.
 
-The state-space model described the previous section can be estimated following the steps below.
+The state-space model described in the previous section can be estimated following the steps below.
 
 ```julia
 function llt_seasonal_noise(θ_bound, Y, s)
@@ -415,5 +412,81 @@ p_slope = plot(Y_df[!,:date], hcat(history_Xs...)[2,:], label="Slope", color=RGB
 ```
 <img src="./img/ks_slope_trend.svg">
 
+
+### Bootstrap and jackknife subsampling
+
+```TSAnalysis``` provides support for the bootstrap and jackknife subsampling methods introduced in Kunsch (1989), Liu and Singh (1992), Pellegrino (2020), Politis and Romano (1994):
+
+* Artificial delete-*d* jackknife
+* Block bootstrap
+* Block jackknife
+* Stationary bootstrap
+
+
+#### Data
+
+Use the following lines of code to download the data for the examples below:
+```julia
+# Tickers for data of interest
+tickers = ["INDPRO", "PAYEMS", "CPIAUCSL"];
+
+# Transformations for data of interest
+transformations = ["log", "log", "log"];
+
+# Download data of interest
+Y_df = download_fred_vintage(tickers, transformations);
+
+# Convert to JArray{Float64}
+Y = Y_df[:,2:end] |> JArray{Float64};
+Y = 100*permutedims(diff(Y, dims=1));
+```
+
+#### Subsampling
+
+##### Artificial delete-*d* jackknife
+
+```julia
+# Optimal d. See Pellegrino (2020) for more details.
+d_hat = optimal_d(size(Y)...);
+
+# 100 artificial jackknife samples
+output_ajk = artificial_jackknife(Y, d_hat/prod(size(Y)), 100);
+```
+
+##### Block bootstrap
+
+```julia
+# Block size
+block_size = 10;
+
+# 100 block bootstrap samples
+output_bb = moving_block_bootstrap(Y, block_size/size(Y,2), 100);
+```
+
+##### Block jackknife
+
+```julia
+# Block size
+block_size = 10;
+
+# Block jackknife samples (full collection)
+output_bjk = block_jackknife(Y, block_size/size(Y,2));
+```
+
+##### Stationary bootstrap
+
+```julia
+# Average block size
+avg_block_size = 10;
+
+# 100 stationary bootstrap samples
+output_sb = stationary_block_bootstrap(Y, avg_block_size/size(Y,2), 100);
+```
+
+
 ## Bibliography
-* R. H. Shumway and D. S. Stoffer. An approach to time series smoothing and forecasting using the EM algorithm. Journal of time series analysis, 3(4):253–264, 1982.
+* Kunsch, H. R. (1989). The jackknife and the bootstrap for general stationary observations. The annals of Statistics, 1217-1241.
+* Liu, R. Y., & Singh, K. (1992). Moving blocks jackknife and bootstrap capture weak dependence. Exploring the limits of bootstrap, 225, 248.
+* Pellegrino, F. (2020). Selecting time-series hyperparameters with the artificial jackknife. arXiv preprint arXiv:2002.04697.
+* Politis, D. N., & Romano, J. P. (1994). The stationary bootstrap. Journal of the American Statistical association, 89(428), 1303-1313.
+* Shumway, R. H., & Stoffer, D. S. (1982). An approach to time series smoothing and forecasting using the EM algorithm. Journal of time series analysis, 3(4), 253-264.

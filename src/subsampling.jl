@@ -13,7 +13,7 @@ This technique subsamples a time series dataset by removing, in turn, all the bl
 
 # Arguments
 - `Y`: Observed measurements (`nxT`), where `n` and `T` are the number of series and observations.
-- `subsample`: Block size as a percentage of the original sample size. It is bounded between 0 and 1.
+- `subsample`: Block size as a percentage of number of observed periods. It is bounded between 0 and 1.
 
 # References
 Kunsch (1989) and Pellegrino (2020).
@@ -192,7 +192,7 @@ The moving block bootstrap randomly subsamples a time series into ordered and ov
 
 # Arguments
 - `Y`: Observed measurements (`nxT`), where `n` and `T` are the number of series and observations.
-- `subsample`: Block size as a percentage of the original sample size. It is bounded between 0 and 1.
+- `subsample`: Block size as a percentage of number of observed periods. It is bounded between 0 and 1.
 - `samples`: Number of bootstrap samples.
 
 # References
@@ -244,7 +244,7 @@ Note: Block size is exponentially distributed with mean `Int64(ceil(subsample*T)
 
 # Arguments
 - `Y`: Observed measurements (`nxT`), where `n` and `T` are the number of series and observations.
-- `subsample`: Average block size as a percentage of the original sample size. It is bounded between 0 and 1.
+- `subsample`: Block size as a percentage of number of observed periods. It is bounded between 0 and 1.
 - `samples`: Number of bootstrap samples.
 
 # References
