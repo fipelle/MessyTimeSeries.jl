@@ -15,7 +15,7 @@ penalty_eigen(λ::Complex{Float64}) = abs(λ) < 1 ? abs(λ)/(1-abs(λ)) : Inf;
 """
     fmin_uc_models(θ_unbound::FloatVector, lb::FloatVector, ub::FloatVector, transform_id::Array{Int64,1}, model_structure::Function, settings::UCSettings)
 
-Return fmin for the UC model specified by model_structure(settings)
+Return fmin for the UC model specified by model_structure(settings).
 
 # Arguments
 - `θ_unbound`: Model parameters (with unbounded support)
@@ -108,7 +108,7 @@ function forecast(settings::KalmanSettings, h::Int64)
     if settings.T-starting_point > 0
         Y_fc[last_observations.==settings.T, settings.T-starting_point] .= NaN;
     end
-    
+
     # Return forecast for Y
     return Y_fc;
 end
@@ -252,7 +252,7 @@ arima(settings::VARIMASettings, args...; tightness::Float64=1.0) = varima(settin
 """
     forecast(settings::KalmanSettings, h::Int64, varima_settings::VARIMASettings)
 
-Compute the h-step ahead forecast for the data included in settings (in the varima_settings.Y_levels scale)
+Compute the h-step ahead forecast for the data included in settings (in the varima_settings.Y_levels scale).
 
 # Arguments
 - `settings`: KalmanSettings struct
