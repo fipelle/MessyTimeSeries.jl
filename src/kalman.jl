@@ -16,7 +16,7 @@ Kalman filter a-priori prediction for P.
 - `settings`: KalmanSettings struct
 """
 apriori(X::FloatVector, settings::KalmanSettings) = settings.C * X;
-apriori(P::SymMatrix, settings::KalmanSettings) = Symmetric(settings.C * P * settings.C' + settings.V)::SymMatrix;
+apriori(P::SymMatrix, settings::KalmanSettings) = Symmetric(settings.C * P * settings.C' + settings.DQD)::SymMatrix;
 
 """
     apriori!(::Type{Nothing}, settings::KalmanSettings, status::KalmanStatus)
