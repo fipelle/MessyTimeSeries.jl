@@ -4,7 +4,7 @@ module TSAnalysis
 
     # Libraries
     using Dates, Distributed, Logging;
-    using LinearAlgebra, Distributions, Optim, Statistics;
+    using LinearAlgebra, Distributions, Statistics;
 
     # Custom dependencies
     const local_path = dirname(@__FILE__);
