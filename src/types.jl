@@ -38,6 +38,7 @@ where ``e_{t} ~ N(0_{nx1}, R)`` and ``U_{t} ~ N(0_{mx1}, Q)``.
 - `Q`: Covariance matrix of the transition equations' error terms
 - `X0`: Mean vector for the states at time t=0
 - `P0`: Covariance matrix for the states at time t=0
+- `DQD`: Covariance matrix of D*U_{t} (i.e., D*Q*D')
 - `n`: Number of series
 - `T`: Number of observations
 - `m`: Number of latent states
@@ -53,6 +54,7 @@ struct ImmutableKalmanSettings <: KalmanSettings
     Q::SymMatrix
     X0::FloatVector
     P0::SymMatrix
+    DQD::SymMatrix
     n::Int64
     T::Int64
     m::Int64
@@ -71,7 +73,7 @@ function ImmutableKalmanSettings(Y::Union{FloatMatrix, JArray{Float64,2}}, B::Fl
     P0 = Symmetric(reshape((I-kron(C, C))\Q[:], m, m));
 
     # Return ImmutableKalmanSettings
-    return ImmutableKalmanSettings(Y, B, R, C, D, Q, X0, P0, n, T, m, compute_loglik, store_history);
+    return ImmutableKalmanSettings(Y, B, R, C, D, Q, X0, P0, Q, n, T, m, compute_loglik, store_history);
 end
 
 # ImmutableKalmanSettings constructor
@@ -81,22 +83,23 @@ function ImmutableKalmanSettings(Y::Union{FloatMatrix, JArray{Float64,2}}, B::Fl
     n, T = size(Y);
     m = size(B,2);
     X0 = zeros(m);
-    DQD = D*Q*D';
+    DQD = Symmetric(D*Q*D');
     P0 = Symmetric(reshape((I-kron(C, C))\DQD[:], m, m));
 
     # Return ImmutableKalmanSettings
-    return ImmutableKalmanSettings(Y, B, R, C, D, Q, X0, P0, n, T, m, compute_loglik, store_history);
+    return ImmutableKalmanSettings(Y, B, R, C, D, Q, X0, P0, DQD, n, T, m, compute_loglik, store_history);
 end
 
 # ImmutableKalmanSettings constructor
 function ImmutableKalmanSettings(Y::Union{FloatMatrix, JArray{Float64,2}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatVector, P0::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
 
     # Compute default value for missing parameters
+    DQD = Symmetric(D*Q*D');
     n, T = size(Y);
     m = size(B,2);
 
     # Return ImmutableKalmanSettings
-    return ImmutableKalmanSettings(Y, B, R, C, D, Q, X0, P0, n, T, m, compute_loglik, store_history);
+    return ImmutableKalmanSettings(Y, B, R, C, D, Q, X0, P0, DQD, n, T, m, compute_loglik, store_history);
 end
 
 """
@@ -115,6 +118,7 @@ mutable struct MutableKalmanSettings <: KalmanSettings
     Q::SymMatrix
     X0::FloatVector
     P0::SymMatrix
+    DQD::SymMatrix
     n::Int64
     T::Int64
     m::Int64
@@ -133,7 +137,7 @@ function MutableKalmanSettings(Y::Union{FloatMatrix, JArray{Float64,2}}, B::Floa
     P0 = Symmetric(reshape((I-kron(C, C))\Q[:], m, m));
 
     # Return MutableKalmanSettings
-    return MutableKalmanSettings(Y, B, R, C, D, Q, X0, P0, n, T, m, compute_loglik, store_history);
+    return MutableKalmanSettings(Y, B, R, C, D, Q, X0, P0, Q, n, T, m, compute_loglik, store_history);
 end
 
 # MutableKalmanSettings constructor
@@ -143,22 +147,23 @@ function MutableKalmanSettings(Y::Union{FloatMatrix, JArray{Float64,2}}, B::Floa
     n, T = size(Y);
     m = size(B,2);
     X0 = zeros(m);
-    DQD = D*Q*D';
+    DQD = Symmetric(D*Q*D');
     P0 = Symmetric(reshape((I-kron(C, C))\DQD[:], m, m));
 
     # Return MutableKalmanSettings
-    return MutableKalmanSettings(Y, B, R, C, D, Q, X0, P0, n, T, m, compute_loglik, store_history);
+    return MutableKalmanSettings(Y, B, R, C, D, Q, X0, P0, DQD, n, T, m, compute_loglik, store_history);
 end
 
 # MutableKalmanSettings constructor
 function MutableKalmanSettings(Y::Union{FloatMatrix, JArray{Float64,2}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatVector, P0::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
 
     # Compute default value for missing parameters
+    DQD = Symmetric(D*Q*D');
     n, T = size(Y);
     m = size(B,2);
 
     # Return MutableKalmanSettings
-    return MutableKalmanSettings(Y, B, R, C, D, Q, X0, P0, n, T, m, compute_loglik, store_history);
+    return MutableKalmanSettings(Y, B, R, C, D, Q, X0, P0, DQD, n, T, m, compute_loglik, store_history);
 end
 
 """
