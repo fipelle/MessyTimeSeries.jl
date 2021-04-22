@@ -11,7 +11,7 @@ function ksettings_input_test(ksettings::KalmanSettings, Y::JArray, B::FloatMatr
                       ksettings.D == D;
                       ksettings.Q == Q;
                       ksettings.X0 == X0;
-                      round.(ksettings.P0, digits=10) == benchmark_P0;
+                      round.(ksettings.P0, digits=10) == P0;
                       ksettings.DQD == DQD;
                       ksettings.n == n;
                       ksettings.T == T;
@@ -21,15 +21,16 @@ function ksettings_input_test(ksettings::KalmanSettings, Y::JArray, B::FloatMatr
 end
 
 """
-    kalman_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatArray, P0::SymMatrix, DQD::SymMatrix, n::Int64, T::Int64, m::Int64, benchmark_data::Tuple)
+    kalman_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, benchmark_data::Tuple)
 
 Run a series of tests to check whether the kalman.jl functions work.
 """
-function kalman_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatArray, P0::SymMatrix, DQD::SymMatrix, n::Int64, T::Int64, m::Int64, benchmark_data::Tuple)
+function kalman_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, benchmark_data::Tuple)
 
     # Benchmark data
-    benchmark_X0, benchmark_P0, benchmark_X_prior, benchmark_P_prior, benchmark_X_post, benchmark_P_post, benchmark_X_fc, benchmark_P_fc, benchmark_loglik,
-        benchmark_X0_sm, benchmark_P0_sm, benchmark_X_sm, benchmark_P_sm = benchmark_data;
+    benchmark_n, benchmark_T, benchmark_m, benchmark_X0, benchmark_P0, benchmark_DQD, benchmark_X_prior, benchmark_P_prior, 
+        benchmark_X_post, benchmark_P_post, benchmark_X_fc, benchmark_P_fc, benchmark_loglik, benchmark_X0_sm, benchmark_P0_sm, 
+            benchmark_X_sm, benchmark_P_sm = benchmark_data;
 
     # Loop over ImmutableKalmanSettings and MutableKalmanSettings
     for ksettings_type = [ImmutableKalmanSettings; MutableKalmanSettings]
@@ -38,19 +39,19 @@ function kalman_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D:
 
             # Tests on KalmanSettings (min. number of arguments for ksettings_type)
             if test_family_id == 1
-                D_I = Matrix(I, m, m) |> FloatMatrix;
-                test_family_input = (Y, B, R, C, DQD);
-                test_family_benchmark = (Y, B, R, C, D_I, DQD, X0, P0, DQD, n, T, m);
+                D_I = Matrix(I, benchmark_m, benchmark_m) |> FloatMatrix;
+                test_family_input = (Y, B, R, C, benchmark_DQD);
+                test_family_benchmark = (Y, B, R, C, D_I, benchmark_DQD, benchmark_X0, benchmark_P0, benchmark_DQD, benchmark_n, benchmark_T, benchmark_m);
 
             # Tests on KalmanSettings (std. number of arguments for ksettings_type)
             elseif test_family_id == 2
                 test_family_input = (Y, B, R, C, D, Q);
-                test_family_benchmark = (Y, B, R, C, D, Q, X0, P0, DQD, n, T, m);
+                test_family_benchmark = (Y, B, R, C, D, Q, benchmark_X0, benchmark_P0, benchmark_DQD, benchmark_n, benchmark_T, benchmark_m);
             
             # Tests on KalmanSettings (full number of arguments for ksettings_type)
             elseif test_family_id == 3
-                test_family_input = (Y, B, R, C, D, Q, X0, P0);
-                test_family_benchmark = (Y, B, R, C, D, Q, X0, P0, DQD, n, T, m);
+                test_family_input = (Y, B, R, C, D, Q, benchmark_X0, benchmark_P0);
+                test_family_benchmark = (Y, B, R, C, D, Q, benchmark_X0, benchmark_P0, benchmark_DQD, benchmark_n, benchmark_T, benchmark_m);
             end
 
             # Tests on KalmanSettings (full number of arguments for ksettings_type)
@@ -118,8 +119,12 @@ end
     B = ones(1,1);
     R = Symmetric(1e-4*ones(1,1));
     C = 0.9*ones(1,1);
-    V = Symmetric(ones(1,1));
-
+    D = ones(1,1);
+    Q = Symmetric(ones(1,1));
+    
+    # Correct estimates: DQD
+    benchmark_DQD = copy(Q);
+    
     # Correct estimates: initial conditions
     benchmark_X0 = read_test_input("./input/univariate/benchmark_X0");
     benchmark_P0 = read_test_input("./input/univariate/benchmark_P0");
@@ -148,7 +153,7 @@ end
     benchmark_P_sm = read_test_input("./input/univariate/benchmark_P_sm");
 
     # Benchmark data
-    benchmark_data = (benchmark_X0, benchmark_P0, benchmark_X_prior, benchmark_P_prior, benchmark_X_post, benchmark_P_post, benchmark_X_fc, benchmark_P_fc, benchmark_loglik,
+    benchmark_data = (1, size(Y,2), 1, benchmark_X0, benchmark_P0, benchmark_DQD, benchmark_X_prior, benchmark_P_prior, benchmark_X_post, benchmark_P_post, benchmark_X_fc, benchmark_P_fc, benchmark_loglik,
                       benchmark_X0_sm, benchmark_P0_sm, benchmark_X_sm, benchmark_P_sm);
 
     # Run tests
