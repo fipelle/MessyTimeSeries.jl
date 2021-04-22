@@ -169,11 +169,15 @@ end
     B = [1.0 0.0; 1.0 1.0];
     R = Symmetric(1e-4*Matrix(I,2,2));
     C = [0.9 0.0; 0.0 0.1];
-    V = Symmetric(1.0*Matrix(I,2,2));
+    D = Matrix(I,2,2) |> FloatMatrix;
+    Q = Symmetric(D);
+    
+    # Correct estimates: DQD
+    benchmark_DQD = copy(Q);
 
     # Correct estimates: initial conditions
     benchmark_X0 = read_test_input("./input/multivariate/benchmark_X0");
-    benchmark_P0 = read_test_input("./input/multivariate/benchmark_P0");
+    benchmark_P0 = Symmetric(read_test_input("./input/multivariate/benchmark_P0"));
 
     # Correct estimates: a priori
     benchmark_X_prior = read_test_input("./input/multivariate/benchmark_X_prior");
@@ -199,9 +203,9 @@ end
     benchmark_P_sm = read_test_input("./input/multivariate/benchmark_P_sm");
 
     # Benchmark data
-    benchmark_data = (benchmark_X0, benchmark_P0, benchmark_X_prior, benchmark_P_prior, benchmark_X_post, benchmark_P_post, benchmark_X_fc, benchmark_P_fc, benchmark_loglik,
+    benchmark_data = (2, size(Y,2), 2, benchmark_X0, benchmark_P0, benchmark_DQD, benchmark_X_prior, benchmark_P_prior, benchmark_X_post, benchmark_P_post, benchmark_X_fc, benchmark_P_fc, benchmark_loglik,
                       benchmark_X0_sm, benchmark_P0_sm, benchmark_X_sm, benchmark_P_sm);
 
     # Run tests
-    kalman_test(Y, B, R, C, V, benchmark_data);
+    kalman_test(Y, B, R, C, D, Q, benchmark_data);
 end
