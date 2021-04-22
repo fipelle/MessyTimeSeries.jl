@@ -75,44 +75,61 @@ function kalman_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D:
         ksettings10 = ksettings_type(Y, B, R, C, D, Q);
         @test ksettings_input_test(ksettings10, Y, B, R, C, D, Q, X0, P0, DQD);
 
-        # Set default ksettings
-        ksettings = ksettings5;
+        # Tests on KalmanSettings (full number of arguments for ksettings_type)
+        ksettings11 = ksettings_type(Y, B, R, C, D, Q, X0, P0, compute_loglik=true, store_history=true);
+        @test ksettings_input_test(ksettings11, Y, B, R, C, D, Q, X0, P0, DQD, compute_loglik=true, store_history=true);
 
-        # Initialise kstatus
-        kstatus = KalmanStatus();
+        ksettings12 = ksettings_type(Y, B, R, C, D, Q, X0, P0, compute_loglik=false, store_history=true);
+        @test ksettings_input_test(ksettings12, Y, B, R, C, D, Q, X0, P0, DQD, compute_loglik=false, store_history=true);
 
-        for t=1:size(Y,2)
+        ksettings13 = ksettings_type(Y, B, R, C, D, Q, X0, P0, compute_loglik=true, store_history=false);
+        @test ksettings_input_test(ksettings13, Y, B, R, C, D, Q, X0, P0, DQD, compute_loglik=true, store_history=false);
 
-            # Run filter
-            kfilter!(ksettings, kstatus);
+        ksettings14 = ksettings_type(Y, B, R, C, D, Q, X0, P0, compute_loglik=false, store_history=false);
+        @test ksettings_input_test(ksettings14, Y, B, R, C, D, Q, X0, P0, DQD, compute_loglik=false, store_history=false);
 
-            # A-priori
-            @test round.(kstatus.X_prior, digits=10) == benchmark_X_prior[t];
-            @test round.(kstatus.P_prior, digits=10) == benchmark_P_prior[t];
+        ksettings15 = ksettings_type(Y, B, R, C, D, Q, X0, P0);
+        @test ksettings_input_test(ksettings15, Y, B, R, C, D, Q, X0, P0, DQD);
 
-            # A-posteriori
-            @test round.(kstatus.X_post, digits=10) == benchmark_X_post[t];
-            @test round.(kstatus.P_post, digits=10) == benchmark_P_post[t];
+        # Loop over default ksettings
+        for ksettings = [ksettings5; ksettings10; ksettings15]
 
-            # 12-step ahead forecast
-            @test round.(kforecast(ksettings, kstatus.X_post, 12)[end], digits=10) == benchmark_X_fc[t];
-            @test round.(kforecast(ksettings, kstatus.X_post, kstatus.P_post, 12)[1][end], digits=10) == benchmark_X_fc[t];
-            @test round.(kforecast(ksettings, kstatus.X_post, kstatus.P_post, 12)[2][end], digits=10) == benchmark_P_fc[t];
+            # Initialise kstatus
+            kstatus = KalmanStatus();
+
+            for t=1:size(Y,2)
+
+                # Run filter
+                kfilter!(ksettings, kstatus);
+
+                # A-priori
+                @test round.(kstatus.X_prior, digits=10) == benchmark_X_prior[t];
+                @test round.(kstatus.P_prior, digits=10) == benchmark_P_prior[t];
+
+                # A-posteriori
+                @test round.(kstatus.X_post, digits=10) == benchmark_X_post[t];
+                @test round.(kstatus.P_post, digits=10) == benchmark_P_post[t];
+
+                # 12-step ahead forecast
+                @test round.(kforecast(ksettings, kstatus.X_post, 12)[end], digits=10) == benchmark_X_fc[t];
+                @test round.(kforecast(ksettings, kstatus.X_post, kstatus.P_post, 12)[1][end], digits=10) == benchmark_X_fc[t];
+                @test round.(kforecast(ksettings, kstatus.X_post, kstatus.P_post, 12)[2][end], digits=10) == benchmark_P_fc[t];
+            end
+
+            # Final value of the loglikelihood
+            @test round.(kstatus.loglik, digits=10) == benchmark_loglik;
+
+            # Kalman smoother
+            X_sm, P_sm, X0_sm, P0_sm = ksmoother(ksettings, kstatus);
+
+            for t=1:size(Y,2)
+                @test round.(X_sm[t], digits=10) == benchmark_X_sm[t];
+                @test round.(P_sm[t], digits=10) == benchmark_P_sm[t];
+            end
+
+            @test round.(X0_sm, digits=10) == benchmark_X0_sm;
+            @test round.(P0_sm, digits=10) == benchmark_P0_sm;
         end
-
-        # Final value of the loglikelihood
-        @test round.(kstatus.loglik, digits=10) == benchmark_loglik;
-
-        # Kalman smoother
-        X_sm, P_sm, X0_sm, P0_sm = ksmoother(ksettings, kstatus);
-
-        for t=1:size(Y,2)
-            @test round.(X_sm[t], digits=10) == benchmark_X_sm[t];
-            @test round.(P_sm[t], digits=10) == benchmark_P_sm[t];
-        end
-
-        @test round.(X0_sm, digits=10) == benchmark_X0_sm;
-        @test round.(P0_sm, digits=10) == benchmark_P0_sm;
     end
 end
 
