@@ -8,7 +8,14 @@ function ksettings_input_test(ksettings::KalmanSettings, Y::JArray, B::FloatMatr
                       ksettings.B == B;
                       ksettings.R == R;
                       ksettings.C == C;
-                      ksettings.V == V;
+                      ksettings.D == D;
+                      ksettings.Q == Q;
+                      ksettings.X0 == X0;
+                      round.(ksettings.P0, digits=10) == benchmark_P0;
+                      ksettings.DQD == DQD;
+                      ksettings.n == n;
+                      ksettings.T == T;
+                      ksettings.m == m;
                       ksettings.compute_loglik == compute_loglik;
                       ksettings.store_history == store_history];
 end
