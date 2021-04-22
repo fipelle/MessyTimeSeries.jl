@@ -1,4 +1,4 @@
-using LinearAlgebra, Optim, Random, Test, TSAnalysis;
+using LinearAlgebra, Random, Test, TSAnalysis;
 
 """
     read_test_input(filepath::String)
