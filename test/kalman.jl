@@ -1,9 +1,9 @@
 """
-    ksettings_input_test(ksettings::KalmanSettings, Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatArray, P0::SymMatrix, DQD::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
+    ksettings_input_test(ksettings::KalmanSettings, Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatArray, P0::SymMatrix, DQD::SymMatrix, n::Int64, T::Int64, m::Int64; compute_loglik::Bool=true, store_history::Bool=true)
 
 Return true if the entries of ksettings are correct (false otherwise).
 """
-function ksettings_input_test(ksettings::KalmanSettings, Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatArray, P0::SymMatrix, DQD::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
+function ksettings_input_test(ksettings::KalmanSettings, Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatArray, P0::SymMatrix, DQD::SymMatrix, n::Int64, T::Int64, m::Int64; compute_loglik::Bool=true, store_history::Bool=true)
     return ~false in [ksettings.Y == Y;
                       ksettings.B == B;
                       ksettings.R == R;
@@ -40,17 +40,17 @@ function kalman_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D:
             if test_family_id == 1
                 D_I = Matrix(I, m, m) |> FloatMatrix;
                 test_family_input = (Y, B, R, C, DQD);
-                test_family_benchmark = (Y, B, R, C, D_I, DQD, X0, P0, DQD);
+                test_family_benchmark = (Y, B, R, C, D_I, DQD, X0, P0, DQD, n, T, m);
 
             # Tests on KalmanSettings (std. number of arguments for ksettings_type)
             elseif test_family_id == 2
                 test_family_input = (Y, B, R, C, D, Q);
-                test_family_benchmark = (Y, B, R, C, D, Q, X0, P0, DQD);
+                test_family_benchmark = (Y, B, R, C, D, Q, X0, P0, DQD, n, T, m);
             
             # Tests on KalmanSettings (full number of arguments for ksettings_type)
             elseif test_family_id == 3
                 test_family_input = (Y, B, R, C, D, Q, X0, P0);
-                test_family_benchmark = (Y, B, R, C, D, Q, X0, P0, DQD);
+                test_family_benchmark = (Y, B, R, C, D, Q, X0, P0, DQD, n, T, m);
             end
 
             # Tests on KalmanSettings (full number of arguments for ksettings_type)
