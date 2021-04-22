@@ -43,21 +43,21 @@ function kalman_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D:
         =#
 
         D_I = Matrix(I, m, m) |> FloatMatrix;
-        
+
         ksettings1 = ksettings_type(Y, B, R, C, DQD, compute_loglik=true, store_history=true);
-        @test ksettings_input_test(ksettings1, Y, B, R, C, D_I, Q, X0, P0, DQD, compute_loglik=true, store_history=true);
+        @test ksettings_input_test(ksettings1, Y, B, R, C, D_I, DQD, X0, P0, DQD, compute_loglik=true, store_history=true);
 
         ksettings2 = ksettings_type(Y, B, R, C, DQD, compute_loglik=false, store_history=true);
-        @test ksettings_input_test(ksettings2, Y, B, R, C, D_I, Q, X0, P0, DQD, compute_loglik=false, store_history=true);
+        @test ksettings_input_test(ksettings2, Y, B, R, C, D_I, DQD, X0, P0, DQD, compute_loglik=false, store_history=true);
 
         ksettings3 = ksettings_type(Y, B, R, C, DQD, compute_loglik=true, store_history=false);
-        @test ksettings_input_test(ksettings3, Y, B, R, C, D_I, Q, X0, P0, DQD, compute_loglik=true, store_history=false);
+        @test ksettings_input_test(ksettings3, Y, B, R, C, D_I, DQD, X0, P0, DQD, compute_loglik=true, store_history=false);
 
         ksettings4 = ksettings_type(Y, B, R, C, DQD, compute_loglik=false, store_history=false);
-        @test ksettings_input_test(ksettings4, Y, B, R, C, D_I, Q, X0, P0, DQD, compute_loglik=false, store_history=false);
+        @test ksettings_input_test(ksettings4, Y, B, R, C, D_I, DQD, X0, P0, DQD, compute_loglik=false, store_history=false);
 
         ksettings5 = ksettings_type(Y, B, R, C, DQD);
-        @test ksettings_input_test(ksettings5, Y, B, R, C, D_I, Q, X0, P0, DQD);
+        @test ksettings_input_test(ksettings5, Y, B, R, C, D_I, DQD, X0, P0, DQD);
 
         # Tests on KalmanSettings (std. number of arguments for ksettings_type)
         ksettings6 = ksettings_type(Y, B, R, C, D, Q, compute_loglik=true, store_history=true);
