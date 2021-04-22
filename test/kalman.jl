@@ -127,7 +127,7 @@ end
     
     # Correct estimates: initial conditions
     benchmark_X0 = read_test_input("./input/univariate/benchmark_X0");
-    benchmark_P0 = read_test_input("./input/univariate/benchmark_P0");
+    benchmark_P0 = Symmetric(read_test_input("./input/univariate/benchmark_P0"));
 
     # Correct estimates: a priori
     benchmark_X_prior = read_test_input("./input/univariate/benchmark_X_prior");
