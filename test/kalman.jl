@@ -157,7 +157,7 @@ end
                       benchmark_X0_sm, benchmark_P0_sm, benchmark_X_sm, benchmark_P_sm);
 
     # Run tests
-    kalman_test(Y, B, R, C, V, benchmark_data);
+    kalman_test(Y, B, R, C, D, Q, benchmark_data);
 end
 
 @testset "multivariate model" begin
