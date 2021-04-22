@@ -51,11 +51,25 @@ function kalman_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D:
         @test ksettings_input_test(ksettings5, Y, B, R, C, D, Q, X0, P0, DQD);
 
         # Tests on KalmanSettings (mid. number of arguments for ksettings_type)
+        ksettings6 = ksettings_type(Y, B, R, C, D, Q, compute_loglik=true, store_history=true);
+        @test ksettings_input_test(ksettings6, Y, B, R, C, D, Q, X0, P0, DQD, compute_loglik=true, store_history=true);
+
+        ksettings7 = ksettings_type(Y, B, R, C, D, Q, compute_loglik=false, store_history=true);
+        @test ksettings_input_test(ksettings7, Y, B, R, C, D, Q, X0, P0, DQD, compute_loglik=false, store_history=true);
+
+        ksettings8 = ksettings_type(Y, B, R, C, D, Q, compute_loglik=true, store_history=false);
+        @test ksettings_input_test(ksettings8, Y, B, R, C, D, Q, X0, P0, DQD, compute_loglik=true, store_history=false);
+
+        ksettings9 = ksettings_type(Y, B, R, C, D, Q, compute_loglik=false, store_history=false);
+        @test ksettings_input_test(ksettings9, Y, B, R, C, D, Q, X0, P0, DQD, compute_loglik=false, store_history=false);
+
+        ksettings10 = ksettings_type(Y, B, R, C, D, Q);
+        @test ksettings_input_test(ksettings10, Y, B, R, C, D, Q, X0, P0, DQD);
 
 
 
 
-        
+
         # Set default ksettings
         ksettings = ksettings5;
 
