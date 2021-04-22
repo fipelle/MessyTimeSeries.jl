@@ -21,11 +21,11 @@ function ksettings_input_test(ksettings::KalmanSettings, Y::JArray, B::FloatMatr
 end
 
 """
-    kalman_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatArray, P0::SymMatrix, DQD::SymMatrix, benchmark_data::Tuple)
+    kalman_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatArray, P0::SymMatrix, DQD::SymMatrix, n::Int64, T::Int64, m::Int64, benchmark_data::Tuple)
 
 Run a series of tests to check whether the kalman.jl functions work.
 """
-function kalman_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatArray, P0::SymMatrix, DQD::SymMatrix, benchmark_data::Tuple)
+function kalman_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatArray, P0::SymMatrix, DQD::SymMatrix, n::Int64, T::Int64, m::Int64, benchmark_data::Tuple)
 
     # Benchmark data
     benchmark_X0, benchmark_P0, benchmark_X_prior, benchmark_P_prior, benchmark_X_post, benchmark_P_post, benchmark_X_fc, benchmark_P_fc, benchmark_loglik,
@@ -34,21 +34,30 @@ function kalman_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D:
     # Loop over ImmutableKalmanSettings and MutableKalmanSettings
     for ksettings_type = [ImmutableKalmanSettings; MutableKalmanSettings]
 
-        # Tests on KalmanSettings (min. number of arguments for ksettings_type)
+        #=
+        Tests on KalmanSettings (min. number of arguments for ksettings_type)
+        
+        This set of tests replaces: 
+        1. the benchmark D with an identity matrix
+        2. the benchmark Q with DQD
+        =#
+
+        D_I = Matrix(I, m, m) |> FloatMatrix;
+        
         ksettings1 = ksettings_type(Y, B, R, C, DQD, compute_loglik=true, store_history=true);
-        @test ksettings_input_test(ksettings1, Y, B, R, C, D, Q, X0, P0, DQD, compute_loglik=true, store_history=true);
+        @test ksettings_input_test(ksettings1, Y, B, R, C, D_I, Q, X0, P0, DQD, compute_loglik=true, store_history=true);
 
         ksettings2 = ksettings_type(Y, B, R, C, DQD, compute_loglik=false, store_history=true);
-        @test ksettings_input_test(ksettings2, Y, B, R, C, D, Q, X0, P0, DQD, compute_loglik=false, store_history=true);
+        @test ksettings_input_test(ksettings2, Y, B, R, C, D_I, Q, X0, P0, DQD, compute_loglik=false, store_history=true);
 
         ksettings3 = ksettings_type(Y, B, R, C, DQD, compute_loglik=true, store_history=false);
-        @test ksettings_input_test(ksettings3, Y, B, R, C, D, Q, X0, P0, DQD, compute_loglik=true, store_history=false);
+        @test ksettings_input_test(ksettings3, Y, B, R, C, D_I, Q, X0, P0, DQD, compute_loglik=true, store_history=false);
 
         ksettings4 = ksettings_type(Y, B, R, C, DQD, compute_loglik=false, store_history=false);
-        @test ksettings_input_test(ksettings4, Y, B, R, C, D, Q, X0, P0, DQD, compute_loglik=false, store_history=false);
+        @test ksettings_input_test(ksettings4, Y, B, R, C, D_I, Q, X0, P0, DQD, compute_loglik=false, store_history=false);
 
         ksettings5 = ksettings_type(Y, B, R, C, DQD);
-        @test ksettings_input_test(ksettings5, Y, B, R, C, D, Q, X0, P0, DQD);
+        @test ksettings_input_test(ksettings5, Y, B, R, C, D_I, Q, X0, P0, DQD);
 
         # Tests on KalmanSettings (std. number of arguments for ksettings_type)
         ksettings6 = ksettings_type(Y, B, R, C, D, Q, compute_loglik=true, store_history=true);
