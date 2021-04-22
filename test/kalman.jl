@@ -1,9 +1,9 @@
 """
-    ksettings_input_test(ksettings::KalmanSettings, Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, V::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
+    ksettings_input_test(ksettings::KalmanSettings, Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatArray, P0::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
 
 Return true if the entries of ksettings are correct (false otherwise).
 """
-function ksettings_input_test(ksettings::KalmanSettings, Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, V::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
+function ksettings_input_test(ksettings::KalmanSettings, Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatArray, P0::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
     return ~false in [ksettings.Y == Y;
                       ksettings.B == B;
                       ksettings.R == R;
@@ -49,18 +49,6 @@ function kalman_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, V:
 
         ksettings5 = ksettings_type(Y, B, R, C, V);
         @test ksettings_input_test(ksettings5, Y, B, R, C, V);
-
-        # Initial conditions
-        @test round.(ksettings1.X0, digits=10) == benchmark_X0;
-        @test round.(ksettings1.P0, digits=10) == benchmark_P0;
-        @test ksettings1.X0 == ksettings2.X0;
-        @test ksettings1.X0 == ksettings3.X0;
-        @test ksettings1.X0 == ksettings4.X0;
-        @test ksettings1.X0 == ksettings5.X0;
-        @test ksettings1.P0 == ksettings2.P0;
-        @test ksettings1.P0 == ksettings3.P0;
-        @test ksettings1.P0 == ksettings4.P0;
-        @test ksettings1.P0 == ksettings5.P0;
 
         # Set default ksettings
         ksettings = ksettings5;
