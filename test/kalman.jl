@@ -1,98 +1,114 @@
 """
-    ksettings_input_test(ksettings::KalmanSettings, Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, V::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
+    ksettings_input_test(ksettings::KalmanSettings, Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatArray, P0::SymMatrix, DQD::SymMatrix, n::Int64, T::Int64, m::Int64; compute_loglik::Bool=true, store_history::Bool=true)
 
 Return true if the entries of ksettings are correct (false otherwise).
 """
-function ksettings_input_test(ksettings::KalmanSettings, Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, V::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
+function ksettings_input_test(ksettings::KalmanSettings, Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatArray, P0::SymMatrix, DQD::SymMatrix, n::Int64, T::Int64, m::Int64; compute_loglik::Bool=true, store_history::Bool=true)
     return ~false in [ksettings.Y == Y;
                       ksettings.B == B;
                       ksettings.R == R;
                       ksettings.C == C;
-                      ksettings.V == V;
+                      ksettings.D == D;
+                      ksettings.Q == Q;
+                      ksettings.X0 == X0;
+                      round.(ksettings.P0, digits=10) == P0;
+                      ksettings.DQD == DQD;
+                      ksettings.n == n;
+                      ksettings.T == T;
+                      ksettings.m == m;
                       ksettings.compute_loglik == compute_loglik;
                       ksettings.store_history == store_history];
 end
 
 """
-    kalman_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, V::SymMatrix, benchmark_data::Tuple)
+    kalman_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, benchmark_data::Tuple)
 
 Run a series of tests to check whether the kalman.jl functions work.
 """
-function kalman_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, V::SymMatrix, benchmark_data::Tuple)
+function kalman_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, benchmark_data::Tuple)
 
     # Benchmark data
-    benchmark_X0, benchmark_P0, benchmark_X_prior, benchmark_P_prior, benchmark_X_post, benchmark_P_post, benchmark_X_fc, benchmark_P_fc, benchmark_loglik,
-        benchmark_X0_sm, benchmark_P0_sm, benchmark_X_sm, benchmark_P_sm = benchmark_data;
+    benchmark_n, benchmark_T, benchmark_m, benchmark_X0, benchmark_P0, benchmark_DQD, benchmark_X_prior, benchmark_P_prior, 
+        benchmark_X_post, benchmark_P_post, benchmark_X_fc, benchmark_P_fc, benchmark_loglik, benchmark_X0_sm, benchmark_P0_sm, 
+            benchmark_X_sm, benchmark_P_sm = benchmark_data;
 
     # Loop over ImmutableKalmanSettings and MutableKalmanSettings
     for ksettings_type = [ImmutableKalmanSettings; MutableKalmanSettings]
 
-        # Tests on KalmanSettings
-        ksettings1 = ksettings_type(Y, B, R, C, V, compute_loglik=true, store_history=true);
-        @test ksettings_input_test(ksettings1, Y, B, R, C, V, compute_loglik=true, store_history=true);
+        for test_family_id=1:3
 
-        ksettings2 = ksettings_type(Y, B, R, C, V, compute_loglik=false, store_history=true);
-        @test ksettings_input_test(ksettings2, Y, B, R, C, V, compute_loglik=false, store_history=true);
+            # Tests on KalmanSettings (min. number of arguments for ksettings_type)
+            if test_family_id == 1
+                D_I = Matrix(I, benchmark_m, benchmark_m) |> FloatMatrix;
+                test_family_input = (Y, B, R, C, benchmark_DQD);
+                test_family_benchmark = (Y, B, R, C, D_I, benchmark_DQD, benchmark_X0, benchmark_P0, benchmark_DQD, benchmark_n, benchmark_T, benchmark_m);
 
-        ksettings3 = ksettings_type(Y, B, R, C, V, compute_loglik=true, store_history=false);
-        @test ksettings_input_test(ksettings3, Y, B, R, C, V, compute_loglik=true, store_history=false);
+            # Tests on KalmanSettings (std. number of arguments for ksettings_type)
+            elseif test_family_id == 2
+                test_family_input = (Y, B, R, C, D, Q);
+                test_family_benchmark = (Y, B, R, C, D, Q, benchmark_X0, benchmark_P0, benchmark_DQD, benchmark_n, benchmark_T, benchmark_m);
+            
+            # Tests on KalmanSettings (full number of arguments for ksettings_type)
+            elseif test_family_id == 3
+                test_family_input = (Y, B, R, C, D, Q, benchmark_X0, benchmark_P0);
+                test_family_benchmark = (Y, B, R, C, D, Q, benchmark_X0, benchmark_P0, benchmark_DQD, benchmark_n, benchmark_T, benchmark_m);
+            end
 
-        ksettings4 = ksettings_type(Y, B, R, C, V, compute_loglik=false, store_history=false);
-        @test ksettings_input_test(ksettings4, Y, B, R, C, V, compute_loglik=false, store_history=false);
+            # Tests on KalmanSettings (full number of arguments for ksettings_type)
+            ksettings1 = ksettings_type(test_family_input..., compute_loglik=true, store_history=true);
+            @test ksettings_input_test(ksettings1, test_family_benchmark..., compute_loglik=true, store_history=true);
 
-        ksettings5 = ksettings_type(Y, B, R, C, V);
-        @test ksettings_input_test(ksettings5, Y, B, R, C, V);
+            ksettings2 = ksettings_type(test_family_input..., compute_loglik=false, store_history=true);
+            @test ksettings_input_test(ksettings2, test_family_benchmark..., compute_loglik=false, store_history=true);
 
-        # Initial conditions
-        @test round.(ksettings1.X0, digits=10) == benchmark_X0;
-        @test round.(ksettings1.P0, digits=10) == benchmark_P0;
-        @test ksettings1.X0 == ksettings2.X0;
-        @test ksettings1.X0 == ksettings3.X0;
-        @test ksettings1.X0 == ksettings4.X0;
-        @test ksettings1.X0 == ksettings5.X0;
-        @test ksettings1.P0 == ksettings2.P0;
-        @test ksettings1.P0 == ksettings3.P0;
-        @test ksettings1.P0 == ksettings4.P0;
-        @test ksettings1.P0 == ksettings5.P0;
+            ksettings3 = ksettings_type(test_family_input..., compute_loglik=true, store_history=false);
+            @test ksettings_input_test(ksettings3, test_family_benchmark..., compute_loglik=true, store_history=false);
 
-        # Set default ksettings
-        ksettings = ksettings5;
+            ksettings4 = ksettings_type(test_family_input..., compute_loglik=false, store_history=false);
+            @test ksettings_input_test(ksettings4, test_family_benchmark..., compute_loglik=false, store_history=false);
 
-        # Initialise kstatus
-        kstatus = KalmanStatus();
+            ksettings5 = ksettings_type(test_family_input...);
+            @test ksettings_input_test(ksettings5, test_family_benchmark...);
 
-        for t=1:size(Y,2)
+            # Select default ksettings
+            ksettings = ksettings5;
 
-            # Run filter
-            kfilter!(ksettings, kstatus);
+            # Initialise kstatus
+            kstatus = KalmanStatus();
 
-            # A-priori
-            @test round.(kstatus.X_prior, digits=10) == benchmark_X_prior[t];
-            @test round.(kstatus.P_prior, digits=10) == benchmark_P_prior[t];
+            for t=1:size(Y,2)
 
-            # A-posteriori
-            @test round.(kstatus.X_post, digits=10) == benchmark_X_post[t];
-            @test round.(kstatus.P_post, digits=10) == benchmark_P_post[t];
+                # Run filter
+                kfilter!(ksettings, kstatus);
 
-            # 12-step ahead forecast
-            @test round.(kforecast(ksettings, kstatus.X_post, 12)[end], digits=10) == benchmark_X_fc[t];
-            @test round.(kforecast(ksettings, kstatus.X_post, kstatus.P_post, 12)[1][end], digits=10) == benchmark_X_fc[t];
-            @test round.(kforecast(ksettings, kstatus.X_post, kstatus.P_post, 12)[2][end], digits=10) == benchmark_P_fc[t];
+                # A-priori
+                @test round.(kstatus.X_prior, digits=10) == benchmark_X_prior[t];
+                @test round.(kstatus.P_prior, digits=10) == benchmark_P_prior[t];
+
+                # A-posteriori
+                @test round.(kstatus.X_post, digits=10) == benchmark_X_post[t];
+                @test round.(kstatus.P_post, digits=10) == benchmark_P_post[t];
+
+                # 12-step ahead forecast
+                @test round.(kforecast(ksettings, kstatus.X_post, 12)[end], digits=10) == benchmark_X_fc[t];
+                @test round.(kforecast(ksettings, kstatus.X_post, kstatus.P_post, 12)[1][end], digits=10) == benchmark_X_fc[t];
+                @test round.(kforecast(ksettings, kstatus.X_post, kstatus.P_post, 12)[2][end], digits=10) == benchmark_P_fc[t];
+            end
+
+            # Final value of the loglikelihood
+            @test round.(kstatus.loglik, digits=10) == benchmark_loglik;
+
+            # Kalman smoother
+            X_sm, P_sm, X0_sm, P0_sm = ksmoother(ksettings, kstatus);
+
+            for t=1:size(Y,2)
+                @test round.(X_sm[t], digits=10) == benchmark_X_sm[t];
+                @test round.(P_sm[t], digits=10) == benchmark_P_sm[t];
+            end
+
+            @test round.(X0_sm, digits=10) == benchmark_X0_sm;
+            @test round.(P0_sm, digits=10) == benchmark_P0_sm;
         end
-
-        # Final value of the loglikelihood
-        @test round.(kstatus.loglik, digits=10) == benchmark_loglik;
-
-        # Kalman smoother
-        X_sm, P_sm, X0_sm, P0_sm = ksmoother(ksettings, kstatus);
-
-        for t=1:size(Y,2)
-            @test round.(X_sm[t], digits=10) == benchmark_X_sm[t];
-            @test round.(P_sm[t], digits=10) == benchmark_P_sm[t];
-        end
-
-        @test round.(X0_sm, digits=10) == benchmark_X0_sm;
-        @test round.(P0_sm, digits=10) == benchmark_P0_sm;
     end
 end
 
@@ -103,11 +119,15 @@ end
     B = ones(1,1);
     R = Symmetric(1e-4*ones(1,1));
     C = 0.9*ones(1,1);
-    V = Symmetric(ones(1,1));
-
+    D = ones(1,1);
+    Q = Symmetric(ones(1,1));
+    
+    # Correct estimates: DQD
+    benchmark_DQD = copy(Q);
+    
     # Correct estimates: initial conditions
     benchmark_X0 = read_test_input("./input/univariate/benchmark_X0");
-    benchmark_P0 = read_test_input("./input/univariate/benchmark_P0");
+    benchmark_P0 = Symmetric(read_test_input("./input/univariate/benchmark_P0"));
 
     # Correct estimates: a priori
     benchmark_X_prior = read_test_input("./input/univariate/benchmark_X_prior");
@@ -133,11 +153,11 @@ end
     benchmark_P_sm = read_test_input("./input/univariate/benchmark_P_sm");
 
     # Benchmark data
-    benchmark_data = (benchmark_X0, benchmark_P0, benchmark_X_prior, benchmark_P_prior, benchmark_X_post, benchmark_P_post, benchmark_X_fc, benchmark_P_fc, benchmark_loglik,
+    benchmark_data = (1, size(Y,2), 1, benchmark_X0, benchmark_P0, benchmark_DQD, benchmark_X_prior, benchmark_P_prior, benchmark_X_post, benchmark_P_post, benchmark_X_fc, benchmark_P_fc, benchmark_loglik,
                       benchmark_X0_sm, benchmark_P0_sm, benchmark_X_sm, benchmark_P_sm);
 
     # Run tests
-    kalman_test(Y, B, R, C, V, benchmark_data);
+    kalman_test(Y, B, R, C, D, Q, benchmark_data);
 end
 
 @testset "multivariate model" begin
@@ -149,11 +169,15 @@ end
     B = [1.0 0.0; 1.0 1.0];
     R = Symmetric(1e-4*Matrix(I,2,2));
     C = [0.9 0.0; 0.0 0.1];
-    V = Symmetric(1.0*Matrix(I,2,2));
+    D = Matrix(I,2,2) |> FloatMatrix;
+    Q = Symmetric(D);
+    
+    # Correct estimates: DQD
+    benchmark_DQD = copy(Q);
 
     # Correct estimates: initial conditions
     benchmark_X0 = read_test_input("./input/multivariate/benchmark_X0");
-    benchmark_P0 = read_test_input("./input/multivariate/benchmark_P0");
+    benchmark_P0 = Symmetric(read_test_input("./input/multivariate/benchmark_P0"));
 
     # Correct estimates: a priori
     benchmark_X_prior = read_test_input("./input/multivariate/benchmark_X_prior");
@@ -179,9 +203,60 @@ end
     benchmark_P_sm = read_test_input("./input/multivariate/benchmark_P_sm");
 
     # Benchmark data
-    benchmark_data = (benchmark_X0, benchmark_P0, benchmark_X_prior, benchmark_P_prior, benchmark_X_post, benchmark_P_post, benchmark_X_fc, benchmark_P_fc, benchmark_loglik,
+    benchmark_data = (2, size(Y,2), 2, benchmark_X0, benchmark_P0, benchmark_DQD, benchmark_X_prior, benchmark_P_prior, benchmark_X_post, benchmark_P_post, benchmark_X_fc, benchmark_P_fc, benchmark_loglik,
                       benchmark_X0_sm, benchmark_P0_sm, benchmark_X_sm, benchmark_P_sm);
 
     # Run tests
-    kalman_test(Y, B, R, C, V, benchmark_data);
+    kalman_test(Y, B, R, C, D, Q, benchmark_data);
+end
+
+@testset "multivariate model (non-diagonal)" begin
+    
+    # Initialise data and state-space parameters
+    Y = [0.49 missing 1.01	-0.41 1.33 1.5 -0.36 -1.14 0.11 missing;
+         0.02 missing 0.20 0.14 missing 0.85 missing -0.57 missing 0.11;
+         missing missing 1.15 -0.65 1.32 1.28 -0.57 -1.03 0.14 1.53];
+
+    B = [1 0; 0.5 -0.25; 0.9 0.2];
+    R = Symmetric(1e-4*Matrix(I,3,3));
+    C = [0.6 0.1; 0.25 -0.2];
+    D = [1.0 0.0; 0.5 0.86602540];
+    Q = Symmetric(1.0*Matrix(I,2,2));
+    
+    # Correct estimates: DQD
+    benchmark_DQD = Symmetric(D*Q*D');
+
+    # Correct estimates: initial conditions
+    benchmark_X0 = read_test_input("./input/multivariate_non_diagonal/benchmark_X0");
+    benchmark_P0 = Symmetric(read_test_input("./input/multivariate_non_diagonal/benchmark_P0"));
+
+    # Correct estimates: a priori
+    benchmark_X_prior = read_test_input("./input/multivariate_non_diagonal/benchmark_X_prior");
+    benchmark_P_prior = read_test_input("./input/multivariate_non_diagonal/benchmark_P_prior");
+
+    # Correct estimates: a posteriori
+    benchmark_X_post = read_test_input("./input/multivariate_non_diagonal/benchmark_X_post");
+    benchmark_P_post = read_test_input("./input/multivariate_non_diagonal/benchmark_P_post");
+
+    # Correct estimates: 12-step ahead forecast
+    benchmark_X_fc = read_test_input("./input/multivariate_non_diagonal/benchmark_X_fc");
+    benchmark_P_fc = read_test_input("./input/multivariate_non_diagonal/benchmark_P_fc");
+
+    # Correct estimates: loglikelihood
+    benchmark_loglik = read_test_input("./input/multivariate_non_diagonal/benchmark_loglik")[1];
+
+    # Correct estimates: kalman smoother (smoothed initial conditions)
+    benchmark_X0_sm = read_test_input("./input/multivariate_non_diagonal/benchmark_X0_sm");
+    benchmark_P0_sm = read_test_input("./input/multivariate_non_diagonal/benchmark_P0_sm");
+
+    # Correct estimates: kalman smoother
+    benchmark_X_sm = read_test_input("./input/multivariate_non_diagonal/benchmark_X_sm");
+    benchmark_P_sm = read_test_input("./input/multivariate_non_diagonal/benchmark_P_sm");
+
+    # Benchmark data
+    benchmark_data = (2, size(Y,2), 2, benchmark_X0, benchmark_P0, benchmark_DQD, benchmark_X_prior, benchmark_P_prior, benchmark_X_post, benchmark_P_post, benchmark_X_fc, benchmark_P_fc, benchmark_loglik,
+                      benchmark_X0_sm, benchmark_P0_sm, benchmark_X_sm, benchmark_P_sm);
+
+    # Run tests
+    kalman_test(Y, B, R, C, D, Q, benchmark_data);
 end
