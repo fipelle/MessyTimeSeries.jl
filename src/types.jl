@@ -1,4 +1,7 @@
 # Aliases (types)
+const IntVector    = Array{Int64,1};
+const IntMatrix    = Array{Int64,2};
+const IntArray     = Array{Int64};
 const FloatVector  = Array{Float64,1};
 const FloatMatrix  = Array{Float64,2};
 const FloatArray   = Array{Float64};
