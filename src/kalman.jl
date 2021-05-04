@@ -124,9 +124,12 @@ function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_mi
     # Kalman gain
     K_t = status.P_prior*B_t'*inv(Σ_t);
 
+    # Convenient shortcut for the calculation of P_post
+    I_K_t = I - K_t*B_t;
+
     # A posteriori estimates
     status.X_post = status.X_prior + K_t*ε_t;
-    status.P_post = Symmetric(status.P_prior - K_t*B_t*status.P_prior)::SymMatrix;
+    status.P_post = Symmetric(I_K_t*status.P_prior*I_K_t' + K_t*R_t*K_t);
 
     # Update log likelihood
     if settings.compute_loglik == true
