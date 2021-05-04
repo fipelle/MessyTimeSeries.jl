@@ -129,7 +129,7 @@ function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_mi
 
     # A posteriori estimates
     status.X_post = status.X_prior + K_t*ε_t;
-    status.P_post = Symmetric(I_K_t*status.P_prior*I_K_t' + K_t*R_t*K_t);
+    status.P_post = Symmetric(I_K_t*status.P_prior*I_K_t' + K_t*R_t*K_t');
 
     # Update log likelihood
     if settings.compute_loglik == true
