@@ -151,15 +151,6 @@ end
 
 Kalman filter: a-priori prediction and a-posteriori update.
 
-# Model
-The state space model used below is,
-
-``Y_{t} = B*X_{t} + e_{t}``
-
-``X_{t} = C*X_{t-1} + v_{t}``
-
-Where ``e_{t} ~ N(0, R)`` and ``v_{t} ~ N(0, V)``.
-
 # Arguments
 - `settings`: KalmanSettings struct
 - `status`: KalmanStatus struct
@@ -198,15 +189,6 @@ Forecast X up to h-step ahead.
     kforecast(settings::KalmanSettings, X::Union{FloatVector, Nothing}, P::Union{SymMatrix, Nothing}, h::Int64)
 
 Forecast X and P up to h-step ahead.
-
-# Model
-The state space model used below is,
-
-``Y_{t} = B*X_{t} + e_{t}``
-
-``X_{t} = C*X_{t-1} + v_{t}``
-
-Where ``e_{t} ~ N(0, R)`` and ``v_{t} ~ N(0, V)``.
 """
 function kforecast(settings::KalmanSettings, Xt::Union{FloatVector, Nothing}, h::Int64)
 
@@ -281,15 +263,6 @@ backwards_pass(Pf_lagged::SymMatrix, J1::FloatArray, Ps::SymMatrix, Pp::SymMatri
     ksmoother(settings::KalmanSettings, status::KalmanStatus)
 
 Kalman smoother: RTS smoother from the last evaluated time period in status to t==0.
-
-# Model
-The state space model used below is,
-
-``Y_{t} = B*X_{t} + e_{t}``
-
-``X_{t} = C*X_{t-1} + v_{t}``
-
-Where ``e_{t} ~ N(0, R)`` and ``v_{t} ~ N(0, V)``.
 
 # Arguments
 - `settings`: KalmanSettings struct
