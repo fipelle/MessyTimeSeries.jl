@@ -79,17 +79,17 @@ function find_observed_data(settings::KalmanSettings, status::KalmanStatus)
 end
 
 """
-    update_loglik!(status::KalmanStatus, ε_t::FloatVector, Σ_t::SymMatrix)
+    update_loglik!(status::KalmanStatus, e_t::FloatVector, inv_F_t::SymMatrix)
 
 Update status.loglik.
 
 # Arguments
 - `status`: KalmanStatus struct
-- `ε_t`: Forecast error
-- `Σ_t`: Forecast error covariance
+- `e_t`: Forecast error
+- `inv_F_t`: Inverse of the forecast error covariance
 """
-function update_loglik!(status::KalmanStatus, ε_t::FloatVector, Σ_t::SymMatrix)
-    status.loglik -= 0.5*(logdet(Σ_t) + ε_t'*inv(Σ_t)*ε_t);
+function update_loglik!(status::KalmanStatus, e_t::FloatVector, inv_F_t::SymMatrix)
+    status.loglik -= 0.5*(-logdet(inv_F_t) + e_t'*inv_F_t*e_t);
 end
 
 """
@@ -118,22 +118,22 @@ function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_mi
     R_t = @view settings.R[ind_not_missings, ind_not_missings];
 
     # Forecast error
-    ε_t = Y_t - B_t*status.X_prior;
-    Σ_t = Symmetric(B_t*status.P_prior*B_t' + R_t)::SymMatrix;
+    e_t = Y_t - B_t*status.X_prior;
+    inv_F_t = inv(Symmetric(B_t*status.P_prior*B_t' + R_t))::SymMatrix;
 
     # Kalman gain
-    K_t = status.P_prior*B_t'*inv(Σ_t);
+    K_t = status.P_prior*B_t'*inv_F_t;
 
     # Convenient shortcut for the calculation of P_post
-    I_K_t = I - K_t*B_t;
+    L_t = I - K_t*B_t;
 
     # A posteriori estimates
-    status.X_post = status.X_prior + K_t*ε_t;
-    status.P_post = Symmetric(I_K_t*status.P_prior*I_K_t' + K_t*R_t*K_t');
+    status.X_post = status.X_prior + K_t*e_t;
+    status.P_post = Symmetric(L_t*status.P_prior*L_t' + K_t*R_t*K_t');
 
     # Update log likelihood
     if settings.compute_loglik == true
-        update_loglik!(status, ε_t, Σ_t);
+        update_loglik!(status, e_t, inv_F_t);
     end
 end
 
