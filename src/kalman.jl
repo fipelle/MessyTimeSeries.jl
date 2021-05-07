@@ -140,8 +140,8 @@ end
 function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing)
     status.X_post = copy(status.X_prior);
     status.P_post = copy(status.P_prior);
-    status.e = nothing;
-    status.inv_F = nothing;
+    status.e = zeros(1);
+    status.inv_F = Symmetric(zeros(1,1));
 end
 
 """
