@@ -181,6 +181,8 @@ Define a mutable structure to manage the status of the Kalman filter and smoothe
 - `X_post`: Latest a-posteriori X
 - `P_prior`: Latest a-priori P
 - `P_post`: Latest a-posteriori P
+- `e_t`: Union{FloatVector, Nothing}
+- `inv_F_t`: Union{SymMatrix, Nothing}
 - `history_X_prior`: History of a-priori X
 - `history_X_post`: History of a-posteriori X
 - `history_P_prior`: History of a-priori P
@@ -193,6 +195,8 @@ mutable struct KalmanStatus
     X_post::Union{FloatVector, Nothing}
     P_prior::Union{SymMatrix, Nothing}
     P_post::Union{SymMatrix, Nothing}
+    e_t::Union{FloatVector, Nothing}
+    inv_F_t::Union{SymMatrix, Nothing}
     history_X_prior::Union{Array{FloatVector,1}, Nothing}
     history_X_post::Union{Array{FloatVector,1}, Nothing}
     history_P_prior::Union{Array{SymMatrix,1}, Nothing}
@@ -200,7 +204,7 @@ mutable struct KalmanStatus
 end
 
 # KalmanStatus constructors
-KalmanStatus() = KalmanStatus(0, [nothing for i=1:9]...);
+KalmanStatus() = KalmanStatus(0, [nothing for i=1:11]...);
 
 
 #=
