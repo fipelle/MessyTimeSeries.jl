@@ -290,7 +290,7 @@ Backward pass for the state vector.
 Backward pass for the covariance of the states.
 """
 backwards_pass(Xf::FloatVector, Pf::SymMatrix, J1::FloatVector) = Xf + Pf*J1;
-backwards_pass(Pf::SymMatrix, J2::FloatVector) = Symmetric(Pf - Pf*J2*Pf);
+backwards_pass(Pf::SymMatrix, J2::SymMatrix) = Symmetric(Pf - Pf*J2*Pf);
 
 """
     ksmoother(settings::KalmanSettings, status::KalmanStatus)
