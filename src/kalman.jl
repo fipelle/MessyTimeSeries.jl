@@ -270,7 +270,7 @@ function compute_smoothing_factors(settings::KalmanSettings, ind_not_missings::I
     return J1, J2;
 end
 
-function compute_smoothing_factors(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, varargs::Vararg{Any,1})
+function compute_smoothing_factors(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, varargs::Vararg{Any})
 
     # Compute J1 and J2
     J1 = settings.C'*J1;
