@@ -53,6 +53,7 @@ function apriori!(::Type{Nothing}, settings::KalmanSettings, status::KalmanStatu
         status.history_P_post = Array{SymMatrix,1}();
         status.history_e = Array{FloatVector,1}();
         status.history_inv_F = Array{SymMatrix,1}();
+        status.history_L = Array{FloatMatrix,1}();
     end
 end
 
@@ -125,11 +126,11 @@ function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_mi
     K_t = status.P_prior*B_t'*status.inv_F;
 
     # Convenient shortcut
-    L_t = I - K_t*B_t;
+    status.L = I - K_t*B_t;
 
     # A posteriori estimates
     status.X_post = status.X_prior + K_t*status.e;
-    status.P_post = Symmetric(L_t*status.P_prior*L_t' + K_t*R_t*K_t'); # Joseph form
+    status.P_post = Symmetric(status.L*status.P_prior*status.L' + K_t*R_t*K_t'); # Joseph form
 
     # Update log likelihood
     if settings.compute_loglik == true
@@ -142,6 +143,7 @@ function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_mi
     status.P_post = copy(status.P_prior);
     status.e = zeros(1);
     status.inv_F = Symmetric(zeros(1,1));
+    status.L = Matrix(I, settings.m, settings.m) |> FloatMatrix;
 end
 
 """
@@ -184,6 +186,7 @@ function kfilter!(settings::KalmanSettings, status::KalmanStatus)
         push!(status.history_P_post, status.P_post);
         push!(status.history_e, status.e);
         push!(status.history_inv_F, status.inv_F);
+        push!(status.history_L, status.L);
     end
 end
 

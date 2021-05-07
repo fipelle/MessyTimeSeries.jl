@@ -183,12 +183,14 @@ Define a mutable structure to manage the status of the Kalman filter and smoothe
 - `P_post`: Latest a-posteriori P
 - `e`: Forecast error
 - `inv_F`: Inverse of the forecast error covariance
+- `L`: Convenient shortcut for the filter and smoother
 - `history_X_prior`: History of a-priori X
 - `history_X_post`: History of a-posteriori X
 - `history_P_prior`: History of a-priori P
 - `history_P_post`: History of a-posteriori P
 - `history_e`: History of the forecast error
 - `history_inv_F`: History of the inverse of the forecast error covariance
+- `history_L`: History of the shortcut L
 """
 mutable struct KalmanStatus
     t::Int64
@@ -199,16 +201,18 @@ mutable struct KalmanStatus
     P_post::Union{SymMatrix, Nothing}
     e::Union{FloatVector, Nothing}
     inv_F::Union{SymMatrix, Nothing}
+    L::Union{FloatMatrix, Nothing}
     history_X_prior::Union{Array{FloatVector,1}, Nothing}
     history_X_post::Union{Array{FloatVector,1}, Nothing}
     history_P_prior::Union{Array{SymMatrix,1}, Nothing}
     history_P_post::Union{Array{SymMatrix,1}, Nothing}
     history_e::Union{Array{FloatVector,1}, Nothing}
     history_inv_F::Union{Array{SymMatrix,1}, Nothing}
+    history_L::Union{Array{FloatMatrix,1}, Nothing}
 end
 
 # KalmanStatus constructors
-KalmanStatus() = KalmanStatus(0, [nothing for i=1:13]...);
+KalmanStatus() = KalmanStatus(0, [nothing for i=1:15]...);
 
 
 #=
