@@ -262,7 +262,8 @@ end
 
 Compute the factors to perform the backwards pass.
 
-    compute_smoothing_factors(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, varargs...)
+    compute_smoothing_factors(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::SymMatrix, L::FloatMatrix)
+    compute_smoothing_factors(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix)
 
 Compute the factors to perform the backwards pass when all series are missing.
 """
@@ -281,7 +282,9 @@ function compute_smoothing_factors(settings::KalmanSettings, ind_not_missings::I
     return J1, J2;
 end
 
-function compute_smoothing_factors(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, varargs...)
+compute_smoothing_factors(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::SymMatrix, L::FloatMatrix) = compute_smoothing_factors(settings, ind_not_missings, J1, J2);
+
+function compute_smoothing_factors(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix)
 
     # Compute J1 and J2
     J1 = settings.C'*J1;
