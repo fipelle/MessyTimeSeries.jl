@@ -204,9 +204,20 @@ end
 
 Forecast X up to h-step ahead.
 
+# Arguments
+- `settings`: KalmanSettings struct
+- `X`: State vector
+- `h`: Forecast horizon
+
     kforecast(settings::KalmanSettings, X::Union{FloatVector, Nothing}, P::Union{SymMatrix, Nothing}, h::Int64)
 
 Forecast X and P up to h-step ahead.
+
+# Arguments
+- `settings`: KalmanSettings struct
+- `X`: State vector
+- `P`: Covariance matrix of the states
+- `h`: Forecast horizon
 """
 function kforecast(settings::KalmanSettings, Xt::Union{FloatVector, Nothing}, h::Int64)
 
@@ -251,7 +262,7 @@ end
 
 Compute the factors to perform the backwards pass.
 
-    compute_smoothing_factors(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, varargs::Vararg{Any,2})
+    compute_smoothing_factors(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, varargs...)
 
 Compute the factors to perform the backwards pass when all series are missing.
 """
@@ -270,7 +281,7 @@ function compute_smoothing_factors(settings::KalmanSettings, ind_not_missings::I
     return J1, J2;
 end
 
-function compute_smoothing_factors(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, varargs::Vararg{Any})
+function compute_smoothing_factors(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, varargs...)
 
     # Compute J1 and J2
     J1 = settings.C'*J1;
