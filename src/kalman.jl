@@ -345,11 +345,8 @@ function ksmoother(settings::KalmanSettings, status::KalmanStatus)
         pushfirst!(history_P, backwards_pass(Pf, J2));
     end
 
-    # Handle missing observations
-    ind_not_missings = find_observed_data(settings, 1);
-
     # Compute smoothed estimates for t==0
-    J1, J2 = compute_smoothing_factors(settings, ind_not_missings, J1, J2);
+    J1, J2 = compute_smoothing_factors(settings, nothing, J1, J2);
     X0 = backwards_pass(settings.X0, Pf, J1);
     P0 = backwards_pass(settings.P0, J2);
 
