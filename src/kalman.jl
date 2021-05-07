@@ -124,12 +124,12 @@ function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_mi
     # Kalman gain
     K_t = status.P_prior*B_t'*status.inv_F;
 
-    # Convenient shortcut for the calculation of P_post
+    # Convenient shortcut
     L_t = I - K_t*B_t;
 
     # A posteriori estimates
     status.X_post = status.X_prior + K_t*status.e;
-    status.P_post = Symmetric(L_t*status.P_prior*L_t' + K_t*R_t*K_t');
+    status.P_post = Symmetric(L_t*status.P_prior*L_t' + K_t*R_t*K_t'); # Joseph form
 
     # Update log likelihood
     if settings.compute_loglik == true
@@ -180,6 +180,8 @@ function kfilter!(settings::KalmanSettings, status::KalmanStatus)
         push!(status.history_X_post, status.X_post);
         push!(status.history_P_prior, status.P_prior);
         push!(status.history_P_post, status.P_post);
+        push!(status.history_e, status.e);
+        push!(status.history_inv_F, status.inv_F);
     end
 end
 
