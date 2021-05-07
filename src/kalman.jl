@@ -327,7 +327,7 @@ function ksmoother(settings::KalmanSettings, status::KalmanStatus)
 
         # Smoothed estimates for t
         J1, J2 = compute_smoothing_factors(settings, ind_not_missings, J1, J2, e, inv_F, L);
-        pushfirst!(history_X, backwards_pass(Xf, J1, Pf));
+        pushfirst!(history_X, backwards_pass(Xf, Pf, J1));
         pushfirst!(history_P, backwards_pass(Pf, J2));
     end
 
@@ -343,7 +343,7 @@ function ksmoother(settings::KalmanSettings, status::KalmanStatus)
 
     # Compute smoothed estimates for t==0
     J1, J2 = compute_smoothing_factors(settings, ind_not_missings, J1, J2, e, inv_F, L);
-    X0 = backwards_pass(Xf, J1, Pf);
+    X0 = backwards_pass(Xf, Pf, J1);
     P0 = backwards_pass(Pf, J2);
 
     # Return output
