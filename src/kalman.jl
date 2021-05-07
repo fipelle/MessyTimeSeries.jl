@@ -347,7 +347,7 @@ function ksmoother(settings::KalmanSettings, status::KalmanStatus)
 
     # Compute smoothed estimates for t==0
     J1, J2 = compute_smoothing_factors(settings, nothing, J1, J2);
-    X0 = backwards_pass(settings.X0, Pf, J1);
+    X0 = backwards_pass(settings.X0, settings.P0, J1);
     P0 = backwards_pass(settings.P0, J2);
 
     # Return output
