@@ -251,7 +251,7 @@ end
 
 Compute the factors to perform the backwards pass.
 
-    compute_smoothing_factors(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::SymMatrix, L::FloatMatrix)
+    compute_smoothing_factors(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, varargs::Vararg{Any,2})
 
 Compute the factors to perform the backwards pass when all series are missing.
 """
@@ -270,7 +270,7 @@ function compute_smoothing_factors(settings::KalmanSettings, ind_not_missings::I
     return J1, J2;
 end
 
-function compute_smoothing_factors(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::SymMatrix, L::FloatMatrix)
+function compute_smoothing_factors(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, varargs::Vararg{Any,1})
 
     # Compute J1 and J2
     J1 = settings.C'*J1;
@@ -285,7 +285,7 @@ end
 
 Backward pass for the state vector.
 
-    backwards_pass(Pf::SymMatrix, J2::FloatVector)
+    backwards_pass(Pf::SymMatrix, J2::SymMatrix)
 
 Backward pass for the covariance of the states.
 """
@@ -312,8 +312,8 @@ function ksmoother(settings::KalmanSettings, status::KalmanStatus)
     J1 = zeros(settings.m);
     J2 = Symmetric(zeros(settings.m, settings.m));
 
-    # Loop over t (from status.t-1 to 2)
-    for t=status.t-1:-1:2
+    # Loop over t (from status.t-1 to 1)
+    for t=status.t-1:-1:1
 
         # Pointers
         Xf = status.history_X_post[t];
@@ -331,20 +331,13 @@ function ksmoother(settings::KalmanSettings, status::KalmanStatus)
         pushfirst!(history_P, backwards_pass(Pf, J2));
     end
 
-    # Pointers
-    Xf = status.history_X_post[1];
-    Pf = status.history_P_post[1];
-    e = status.history_e[1];
-    inv_F = status.history_inv_F[1];
-    L = status.history_L[1];
-
     # Handle missing observations
     ind_not_missings = find_observed_data(settings, 1);
 
     # Compute smoothed estimates for t==0
-    J1, J2 = compute_smoothing_factors(settings, ind_not_missings, J1, J2, e, inv_F, L);
-    X0 = backwards_pass(Xf, Pf, J1);
-    P0 = backwards_pass(Pf, J2);
+    J1, J2 = compute_smoothing_factors(settings, ind_not_missings, J1, J2);
+    X0 = backwards_pass(settings.X0, Pf, J1);
+    P0 = backwards_pass(settings.P0, J2);
 
     # Return output
     return history_X, history_P, X0, P0;
