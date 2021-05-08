@@ -140,11 +140,14 @@ function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_mi
     status.e = Y_t - B_t*status.X_prior;
     status.inv_F = inv(Symmetric(B_t*status.P_prior*B_t' + R_t))::SymMatrix;
 
-    # Kalman gain
-    K_t = status.P_prior*B_t'*status.inv_F;
+    # Convenient shortcut for computing the Kalman gain and increasing stability of status.L and
+    shortcut_gain = B_t'*status.inv_F;
 
-    # Convenient shortcut
-    status.L = I - K_t*B_t;
+    # Kalman gain
+    K_t = status.P_prior*shortcut_gain;
+
+    # Convenient shortcut for the Joseph form and needed statistics for the Kalman smoother
+    status.L = I - status.P_prior*Symmetric(shortcut_gain*B_t);
 
     # A posteriori estimates
     status.X_post = status.X_prior + K_t*status.e;
@@ -330,8 +333,8 @@ function ksmoother(settings::KalmanSettings, status::KalmanStatus)
     for t=status.t-1:-1:1
 
         # Pointers
-        Xf = status.history_X_post[t];
-        Pf = status.history_P_post[t];
+        Xp = status.history_X_prior[t];
+        Pp = status.history_P_prior[t];
         e = status.history_e[t];
         inv_F = status.history_inv_F[t];
         L = status.history_L[t];
@@ -341,8 +344,8 @@ function ksmoother(settings::KalmanSettings, status::KalmanStatus)
 
         # Smoothed estimates for t
         J1, J2 = compute_smoothing_factors(settings, ind_not_missings, J1, J2, e, inv_F, L);
-        pushfirst!(history_X, backwards_pass(Xf, Pf, J1));
-        pushfirst!(history_P, backwards_pass(Pf, J2));
+        pushfirst!(history_X, backwards_pass(Xp, Pp, J1));
+        pushfirst!(history_P, backwards_pass(Pp, J2));
     end
 
     # Compute smoothed estimates for t==0
