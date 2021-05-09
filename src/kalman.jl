@@ -261,16 +261,16 @@ function kforecast(settings::KalmanSettings, Xt::Union{FloatVector, Nothing}, Pt
 end
 
 """
-    compute_smoothing_factors(settings::KalmanSettings, ind_not_missings::IntVector, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::SymMatrix, L::FloatMatrix)
+    update_smoothing_factors!(settings::KalmanSettings, ind_not_missings::IntVector, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::SymMatrix, L::FloatMatrix)
 
-Compute the factors to perform the backwards pass.
+Update J1 and J2 with a-posteriori recursion.
 
-    compute_smoothing_factors(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::SymMatrix, L::FloatMatrix)
-    compute_smoothing_factors(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix)
+    update_smoothing_factors!(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::SymMatrix, L::FloatMatrix)
+    update_smoothing_factors!(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix)
 
-Compute the factors to perform the backwards pass when all series are missing.
+Update J1 and J2 with a-priori recursion when all series are missing.
 """
-function compute_smoothing_factors(settings::KalmanSettings, ind_not_missings::IntVector, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::SymMatrix, L::FloatMatrix)
+function update_smoothing_factors!(settings::KalmanSettings, ind_not_missings::IntVector, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::SymMatrix, L::FloatMatrix)
 
     # Retrieve coefficients
     B_t = @view settings.B[ind_not_missings, :];
@@ -278,23 +278,15 @@ function compute_smoothing_factors(settings::KalmanSettings, ind_not_missings::I
     L_C = L'*settings.C';
 
     # Compute J1 and J2
-    J1 = B_inv_F*e + L_C*J1;
-    J2 = Symmetric(B_inv_F*B_t + L_C*J2*L_C');
-
-    # Return output
-    return J1, J2;
+    J1 .= B_inv_F*e + L_C*J1;
+    J2 .= Symmetric(B_inv_F*B_t + L_C*J2*L_C');
 end
 
-compute_smoothing_factors(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::SymMatrix, L::FloatMatrix) = compute_smoothing_factors(settings, ind_not_missings, J1, J2);
+update_smoothing_factors!(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::SymMatrix, L::FloatMatrix) = update_smoothing_factors!(settings, ind_not_missings, J1, J2);
 
-function compute_smoothing_factors(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix)
-
-    # Compute J1 and J2
-    J1 = settings.C'*J1;
-    J2 = Symmetric(settings.C'*J2*settings.C);
-
-    # Return output
-    return J1, J2;
+function update_smoothing_factors!(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix)
+    J1 .= settings.C'*J1;
+    J2 .= Symmetric(settings.C'*J2*settings.C);
 end
 
 """
@@ -343,13 +335,13 @@ function ksmoother(settings::KalmanSettings, status::KalmanStatus)
         ind_not_missings = find_observed_data(settings, t);
 
         # Smoothed estimates for t
-        J1, J2 = compute_smoothing_factors(settings, ind_not_missings, J1, J2, e, inv_F, L);
+        update_smoothing_factors!(settings, ind_not_missings, J1, J2, e, inv_F, L);
         pushfirst!(history_X, backwards_pass(Xp, Pp, J1));
         pushfirst!(history_P, backwards_pass(Pp, J2));
     end
 
     # Compute smoothed estimates for t==0
-    J1, J2 = compute_smoothing_factors(settings, nothing, J1, J2);
+    update_smoothing_factors!(settings, nothing, J1, J2);
     X0 = backwards_pass(settings.X0, settings.P0, J1);
     P0 = backwards_pass(settings.P0, J2);
 
