@@ -298,16 +298,16 @@ function compute_smoothing_factors(settings::KalmanSettings, ind_not_missings::N
 end
 
 """
-    backwards_pass(Xf::FloatVector, Pf::SymMatrix, J1::FloatVector)
+    backwards_pass(Xp::FloatVector, Pp::SymMatrix, J1::FloatVector)
 
 Backward pass for the state vector.
 
-    backwards_pass(Pf::SymMatrix, J2::SymMatrix)
+    backwards_pass(Pp::SymMatrix, J2::SymMatrix)
 
 Backward pass for the covariance of the states.
 """
-backwards_pass(Xf::FloatVector, Pf::SymMatrix, J1::FloatVector) = Xf + Pf*J1;
-backwards_pass(Pf::SymMatrix, J2::SymMatrix) = Symmetric(Pf - Pf*J2*Pf);
+backwards_pass(Xp::FloatVector, Pp::SymMatrix, J1::FloatVector) = Xp + Pp*J1;
+backwards_pass(Pp::SymMatrix, J2::SymMatrix) = Symmetric(Pp - Pp*J2*Pp);
 
 """
     ksmoother(settings::KalmanSettings, status::KalmanStatus)
