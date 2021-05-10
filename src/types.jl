@@ -1,4 +1,7 @@
 # Aliases (types)
+const IntVector    = Array{Int64,1};
+const IntMatrix    = Array{Int64,2};
+const IntArray     = Array{Int64};
 const FloatVector  = Array{Float64,1};
 const FloatMatrix  = Array{Float64,2};
 const FloatArray   = Array{Float64};
@@ -178,10 +181,16 @@ Define a mutable structure to manage the status of the Kalman filter and smoothe
 - `X_post`: Latest a-posteriori X
 - `P_prior`: Latest a-priori P
 - `P_post`: Latest a-posteriori P
+- `e`: Forecast error
+- `inv_F`: Inverse of the forecast error covariance
+- `L`: Convenient shortcut for the filter and smoother
 - `history_X_prior`: History of a-priori X
 - `history_X_post`: History of a-posteriori X
 - `history_P_prior`: History of a-priori P
 - `history_P_post`: History of a-posteriori P
+- `history_e`: History of the forecast error
+- `history_inv_F`: History of the inverse of the forecast error covariance
+- `history_L`: History of the shortcut L
 """
 mutable struct KalmanStatus
     t::Int64
@@ -190,14 +199,20 @@ mutable struct KalmanStatus
     X_post::Union{FloatVector, Nothing}
     P_prior::Union{SymMatrix, Nothing}
     P_post::Union{SymMatrix, Nothing}
+    e::Union{FloatVector, Nothing}
+    inv_F::Union{SymMatrix, Nothing}
+    L::Union{FloatMatrix, Nothing}
     history_X_prior::Union{Array{FloatVector,1}, Nothing}
     history_X_post::Union{Array{FloatVector,1}, Nothing}
     history_P_prior::Union{Array{SymMatrix,1}, Nothing}
     history_P_post::Union{Array{SymMatrix,1}, Nothing}
+    history_e::Union{Array{FloatVector,1}, Nothing}
+    history_inv_F::Union{Array{SymMatrix,1}, Nothing}
+    history_L::Union{Array{FloatMatrix,1}, Nothing}
 end
 
 # KalmanStatus constructors
-KalmanStatus() = KalmanStatus(0, [nothing for i=1:9]...);
+KalmanStatus() = KalmanStatus(0, [nothing for i=1:15]...);
 
 
 #=

@@ -257,17 +257,26 @@ function lag(X::FloatArray, p::Int64)
 end
 
 """
-    companion_form(θ::FloatVector)
+    companion_form(Ψ::FloatMatrix; extended::Bool=false)
 
-Construct the companion form parameters of θ.
+Construct the companion form matrix from the generic coefficients Ψ. 
+
+If extended is true, it increases the typical dimension of the companion matrix by n rows.
 """
-function companion_form(θ::FloatVector)
+function companion_form(Ψ::FloatMatrix; extended::Bool=false)
 
-    # Number of parameters in θ
-    k = length(θ);
+    # Dimensions
+    n = size(Ψ,1);
+    p = Int64(size(Ψ,2)/n);
 
-    # Return companion form
-    return [permutedims(θ); Matrix(I, k-1, k-1) zeros(k-1)];
+    # Number of rows of the block of identities in the companion form matrix
+    standard_rows = n*(p-1);
+    extra_rows = n*(extended == true);
+    total_rows = standard_rows + extra_rows;
+
+    # Return companion matrix
+    companion = [Ψ zeros(n, extra_rows); Matrix(I, total_rows, total_rows) zeros(total_rows, n)];
+    return companion;
 end
 
 #=

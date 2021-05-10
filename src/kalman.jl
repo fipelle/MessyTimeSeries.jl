@@ -51,6 +51,9 @@ function apriori!(::Type{Nothing}, settings::KalmanSettings, status::KalmanStatu
         status.history_X_post = Array{FloatVector,1}();
         status.history_P_prior = Array{SymMatrix,1}();
         status.history_P_post = Array{SymMatrix,1}();
+        status.history_e = Array{FloatVector,1}();
+        status.history_inv_F = Array{SymMatrix,1}();
+        status.history_L = Array{FloatMatrix,1}();
     end
 end
 
@@ -61,6 +64,14 @@ end
 
 """
     find_observed_data(settings::KalmanSettings, status::KalmanStatus)
+
+Return position of the observed measurements at time status.t.
+
+# Arguments
+- `settings`: KalmanSettings struct
+- `status`: KalmanStatus struct
+
+    find_observed_data(settings::KalmanSettings, t::Int64)
 
 Return position of the observed measurements at time t.
 
@@ -78,22 +89,30 @@ function find_observed_data(settings::KalmanSettings, status::KalmanStatus)
     end
 end
 
+function find_observed_data(settings::KalmanSettings, t::Int64)
+    if t <= settings.T
+        Y_t_all = @view settings.Y[:, t];
+        ind_not_missings = findall(ismissing.(Y_t_all) .== false);
+        if length(ind_not_missings) > 0
+            return ind_not_missings;
+        end
+    end
+end
+
 """
-    update_loglik!(status::KalmanStatus, ε_t::FloatVector, Σ_t::SymMatrix)
+    update_loglik!(status::KalmanStatus)
 
 Update status.loglik.
 
 # Arguments
 - `status`: KalmanStatus struct
-- `ε_t`: Forecast error
-- `Σ_t`: Forecast error covariance
 """
-function update_loglik!(status::KalmanStatus, ε_t::FloatVector, Σ_t::SymMatrix)
-    status.loglik -= 0.5*(logdet(Σ_t) + ε_t'*inv(Σ_t)*ε_t);
+function update_loglik!(status::KalmanStatus)
+    status.loglik -= 0.5*(-logdet(status.inv_F) + status.e'*status.inv_F*status.e);
 end
 
 """
-    aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Array{Int64,1})
+    aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::IntVector)
 
 Kalman filter a-posteriori update. Measurements are observed (or partially observed) at time t.
 
@@ -111,47 +130,47 @@ Kalman filter a-posteriori update. All measurements are not observed at time t.
 - `status`: KalmanStatus struct
 - `ind_not_missings`: Empty array
 """
-function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Array{Int64,1})
+function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::IntVector)
 
     Y_t = @view settings.Y[ind_not_missings, status.t];
     B_t = @view settings.B[ind_not_missings, :];
     R_t = @view settings.R[ind_not_missings, ind_not_missings];
 
     # Forecast error
-    ε_t = Y_t - B_t*status.X_prior;
-    Σ_t = Symmetric(B_t*status.P_prior*B_t' + R_t)::SymMatrix;
+    status.e = Y_t - B_t*status.X_prior;
+    status.inv_F = inv(Symmetric(B_t*status.P_prior*B_t' + R_t))::SymMatrix;
+
+    # Convenient shortcut for computing the Kalman gain and increasing stability of status.L and
+    shortcut_gain = B_t'*status.inv_F;
 
     # Kalman gain
-    K_t = status.P_prior*B_t'*inv(Σ_t);
+    K_t = status.P_prior*shortcut_gain;
+
+    # Convenient shortcut for the Joseph form and needed statistics for the Kalman smoother
+    status.L = I - status.P_prior*Symmetric(shortcut_gain*B_t);
 
     # A posteriori estimates
-    status.X_post = status.X_prior + K_t*ε_t;
-    status.P_post = Symmetric(status.P_prior - K_t*B_t*status.P_prior)::SymMatrix;
+    status.X_post = status.X_prior + K_t*status.e;
+    status.P_post = Symmetric(status.L*status.P_prior*status.L' + K_t*R_t*K_t'); # Joseph form
 
     # Update log likelihood
     if settings.compute_loglik == true
-        update_loglik!(status, ε_t, Σ_t);
+        update_loglik!(status);
     end
 end
 
 function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing)
     status.X_post = copy(status.X_prior);
     status.P_post = copy(status.P_prior);
+    status.e = zeros(1);
+    status.inv_F = Symmetric(zeros(1,1));
+    status.L = Matrix(I, settings.m, settings.m) |> FloatMatrix;
 end
 
 """
     kfilter!(settings::KalmanSettings, status::KalmanStatus)
 
 Kalman filter: a-priori prediction and a-posteriori update.
-
-# Model
-The state space model used below is,
-
-``Y_{t} = B*X_{t} + e_{t}``
-
-``X_{t} = C*X_{t-1} + v_{t}``
-
-Where ``e_{t} ~ N(0, R)`` and ``v_{t} ~ N(0, V)``.
 
 # Arguments
 - `settings`: KalmanSettings struct
@@ -177,6 +196,9 @@ function kfilter!(settings::KalmanSettings, status::KalmanStatus)
         push!(status.history_X_post, status.X_post);
         push!(status.history_P_prior, status.P_prior);
         push!(status.history_P_post, status.P_post);
+        push!(status.history_e, status.e);
+        push!(status.history_inv_F, status.inv_F);
+        push!(status.history_L, status.L);
     end
 end
 
@@ -185,18 +207,20 @@ end
 
 Forecast X up to h-step ahead.
 
+# Arguments
+- `settings`: KalmanSettings struct
+- `X`: State vector
+- `h`: Forecast horizon
+
     kforecast(settings::KalmanSettings, X::Union{FloatVector, Nothing}, P::Union{SymMatrix, Nothing}, h::Int64)
 
 Forecast X and P up to h-step ahead.
 
-# Model
-The state space model used below is,
-
-``Y_{t} = B*X_{t} + e_{t}``
-
-``X_{t} = C*X_{t-1} + v_{t}``
-
-Where ``e_{t} ~ N(0, R)`` and ``v_{t} ~ N(0, V)``.
+# Arguments
+- `settings`: KalmanSettings struct
+- `X`: State vector
+- `P`: Covariance matrix of the states
+- `h`: Forecast horizon
 """
 function kforecast(settings::KalmanSettings, Xt::Union{FloatVector, Nothing}, h::Int64)
 
@@ -237,49 +261,50 @@ function kforecast(settings::KalmanSettings, Xt::Union{FloatVector, Nothing}, Pt
 end
 
 """
-    compute_J1(Pf_lagged::SymMatrix, Pp::SymMatrix, settings::KalmanSettings)
+    update_smoothing_factors!(settings::KalmanSettings, ind_not_missings::IntVector, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::SymMatrix, L::FloatMatrix)
 
-Compute J_{t-1} as in Shumway and Stoffer (2011, chapter 6) to operate the RTS smoother.
+Update J1 and J2 with a-posteriori recursion.
+
+    update_smoothing_factors!(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::SymMatrix, L::FloatMatrix)
+    update_smoothing_factors!(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix)
+
+Update J1 and J2 with a-priori recursion when all series are missing.
 """
-compute_J1(Pf_lagged::SymMatrix, Pp::SymMatrix, settings::KalmanSettings) = Pf_lagged*settings.C'*inv(Pp);
+function update_smoothing_factors!(settings::KalmanSettings, ind_not_missings::IntVector, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::SymMatrix, L::FloatMatrix)
+
+    # Retrieve coefficients
+    B_t = @view settings.B[ind_not_missings, :];
+    B_inv_F = B_t'*inv_F;
+    L_C = L'*settings.C';
+
+    # Compute J1 and J2
+    J1 .= B_inv_F*e + L_C*J1;
+    J2 .= Symmetric(B_inv_F*B_t + L_C*J2*L_C');
+end
+
+update_smoothing_factors!(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::SymMatrix, L::FloatMatrix) = update_smoothing_factors!(settings, ind_not_missings, J1, J2);
+
+function update_smoothing_factors!(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix)
+    J1 .= settings.C'*J1;
+    J2 .= Symmetric(settings.C'*J2*settings.C);
+end
 
 """
-    backwards_pass(Xf_lagged::FloatVector, J1::FloatArray, Xs::FloatVector, Xp::FloatVector)
+    backwards_pass(Xp::FloatVector, Pp::SymMatrix, J1::FloatVector)
 
-Backwards pass for X to get the smoothed states at time t-1.
+Backward pass for the state vector.
 
-# Arguments
-- `Xf_lagged`: Filtered states for time t-1
-- `J1`: J_{t-1} as in Shumway and Stoffer (2011, chapter 6)
-- `Xs`: Smoothed states for time t
-- `Xp`: A-priori states for time t
+    backwards_pass(Pp::SymMatrix, J2::SymMatrix)
 
-    backwards_pass(Pf_lagged::SymMatrix, J1::FloatArray, Ps::SymMatrix, Pp::SymMatrix)
-
-Backwards pass for P to get the smoothed conditional covariance at time t-1.
-
-# Arguments
-- `Pf_lagged`: Filtered conditional covariance for time t-1
-- `J1`: J_{t-1} as in Shumway and Stoffer (2011, chapter 6)
-- `Ps`: Smoothed conditional covariance for time t
-- `Pp`: A-priori conditional covariance for time t
+Backward pass for the covariance of the states.
 """
-backwards_pass(Xf_lagged::FloatVector, J1::FloatArray, Xs::FloatVector, Xp::FloatVector) = Xf_lagged + J1*(Xs-Xp);
-backwards_pass(Pf_lagged::SymMatrix, J1::FloatArray, Ps::SymMatrix, Pp::SymMatrix) = Symmetric(Pf_lagged + J1*(Ps-Pp)*J1')::SymMatrix;
+backwards_pass(Xp::FloatVector, Pp::SymMatrix, J1::FloatVector) = Xp + Pp*J1;
+backwards_pass(Pp::SymMatrix, J2::SymMatrix) = Symmetric(Pp - Pp*J2*Pp);
 
 """
     ksmoother(settings::KalmanSettings, status::KalmanStatus)
 
 Kalman smoother: RTS smoother from the last evaluated time period in status to t==0.
-
-# Model
-The state space model used below is,
-
-``Y_{t} = B*X_{t} + e_{t}``
-
-``X_{t} = C*X_{t-1} + v_{t}``
-
-Where ``e_{t} ~ N(0, R)`` and ``v_{t} ~ N(0, V)``.
 
 # Arguments
 - `settings`: KalmanSettings struct
@@ -290,36 +315,33 @@ function ksmoother(settings::KalmanSettings, status::KalmanStatus)
     # Initialise smoother history
     history_X = Array{FloatVector,1}();
     history_P = Array{SymMatrix,1}();
-    push!(history_X, copy(status.X_post));
-    push!(history_P, copy(status.P_post));
 
-    # Loop over t
-    for t=status.t:-1:2
+    J1 = zeros(settings.m);
+    J2 = Symmetric(zeros(settings.m, settings.m));
+
+    # Loop over t (from status.t-1 to 1)
+    for t=status.t:-1:1
 
         # Pointers
         Xp = status.history_X_prior[t];
         Pp = status.history_P_prior[t];
-        Xf_lagged = status.history_X_post[t-1];
-        Pf_lagged = status.history_P_post[t-1];
-        Xs = history_X[1];
-        Ps = history_P[1];
+        e = status.history_e[t];
+        inv_F = status.history_inv_F[t];
+        L = status.history_L[t];
 
-        # Smoothed estimates for t-1
-        J1 = compute_J1(Pf_lagged, Pp, settings);
-        pushfirst!(history_X, backwards_pass(Xf_lagged, J1, Xs, Xp));
-        pushfirst!(history_P, backwards_pass(Pf_lagged, J1, Ps, Pp));
+        # Handle missing observations
+        ind_not_missings = find_observed_data(settings, t);
+
+        # Smoothed estimates for t
+        update_smoothing_factors!(settings, ind_not_missings, J1, J2, e, inv_F, L);
+        pushfirst!(history_X, backwards_pass(Xp, Pp, J1));
+        pushfirst!(history_P, backwards_pass(Pp, J2));
     end
 
-    # Pointers
-    Xp = status.history_X_prior[1];
-    Pp = status.history_P_prior[1];
-    Xs = history_X[1];
-    Ps = history_P[1];
-
     # Compute smoothed estimates for t==0
-    J1 = compute_J1(settings.P0, Pp, settings);
-    X0 = backwards_pass(settings.X0, J1, Xs, Xp);
-    P0 = backwards_pass(settings.P0, J1, Ps, Pp);
+    update_smoothing_factors!(settings, nothing, J1, J2);
+    X0 = backwards_pass(settings.X0, settings.P0, J1);
+    P0 = backwards_pass(settings.P0, J2);
 
     # Return output
     return history_X, history_P, X0, P0;

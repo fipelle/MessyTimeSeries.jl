@@ -15,7 +15,7 @@ module TSAnalysis
     #include("$local_path/uc_models.jl");
 
     # Export types
-    export JVector, JArray, FloatVector, FloatMatrix, FloatArray, SymMatrix, DiagMatrix,
+    export JVector, JArray, IntVector, IntMatrix, IntArray, FloatVector, FloatMatrix, FloatArray, SymMatrix, DiagMatrix,
            KalmanSettings, ImmutableKalmanSettings, MutableKalmanSettings, KalmanStatus,
            ARIMASettings, VARIMASettings;
 
