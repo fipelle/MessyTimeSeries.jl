@@ -315,14 +315,12 @@ function ksmoother(settings::KalmanSettings, status::KalmanStatus)
     # Initialise smoother history
     history_X = Array{FloatVector,1}();
     history_P = Array{SymMatrix,1}();
-    push!(history_X, copy(status.X_post));
-    push!(history_P, copy(status.P_post));
 
     J1 = zeros(settings.m);
     J2 = Symmetric(zeros(settings.m, settings.m));
 
     # Loop over t (from status.t-1 to 1)
-    for t=status.t-1:-1:1
+    for t=status.t:-1:1
 
         # Pointers
         Xp = status.history_X_prior[t];
