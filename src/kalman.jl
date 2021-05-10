@@ -116,6 +116,8 @@ end
 
 Kalman filter a-posteriori update. Measurements are observed (or partially observed) at time t.
 
+The update for the covariance matrix is implemented by using the Joseph's stabilised form (Bucy and Joseph, 1968).
+
 # Arguments
 - `settings`: KalmanSettings struct
 - `status`: KalmanStatus struct
@@ -305,6 +307,8 @@ backwards_pass(Pp::SymMatrix, J2::SymMatrix) = Symmetric(Pp - Pp*J2*Pp);
     ksmoother(settings::KalmanSettings, status::KalmanStatus)
 
 Kalman smoother: RTS smoother from the last evaluated time period in status to t==0.
+
+The smoother is implemented following the approach proposed in Durbin and Koopman (2012).
 
 # Arguments
 - `settings`: KalmanSettings struct
