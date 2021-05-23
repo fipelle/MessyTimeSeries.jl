@@ -71,7 +71,7 @@ function ImmutableKalmanSettings(Y::Union{FloatMatrix, JArray{Float64,2}}, B::Fl
     # Compute default value for missing parameters
     n, T = size(Y);
     m = size(B,2);
-    D = Matrix(I, n, n) |> FloatMatrix;
+    D = Matrix(I, m, m) |> FloatMatrix;
     X0 = zeros(m);
     P0 = Symmetric(reshape((I-kron(C, C))\Q[:], m, m));
 
@@ -135,7 +135,7 @@ function MutableKalmanSettings(Y::Union{FloatMatrix, JArray{Float64,2}}, B::Floa
     # Compute default value for missing parameters
     n, T = size(Y);
     m = size(B,2);
-    D = Matrix(I, n, n) |> FloatMatrix;
+    D = Matrix(I, m, m) |> FloatMatrix;
     X0 = zeros(m);
     P0 = Symmetric(reshape((I-kron(C, C))\Q[:], m, m));
 
