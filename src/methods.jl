@@ -208,6 +208,38 @@ demean(X::JVector) = X .- mean_skipmissing(X);
 demean(X::JArray) = X .- mean_skipmissing(X);
 
 """
+    standardise(X::FloatVector)
+    standardise(X::JVector)
+
+Demean data.
+
+    standardise(X::FloatMatrix)
+    standardise(X::JArray)
+
+Demean data.
+
+# Examples
+```jldoctest
+julia> standardise([1.0; 1.5; 2.0; 2.5; 3.0])
+5-element Array{Float64,1}:
+ -1.2649110640673518
+ -0.6324555320336759
+  0.0
+  0.6324555320336759
+  1.2649110640673518
+
+julia> standardise([1.0 3.5 1.5 4.0 2.0; 4.5 2.5 5.0 3.0 5.5])
+2×5 Array{Float64,2}:
+ -1.08173    0.849934  -0.695401   1.23627   -0.309067
+  0.309067  -1.23627    0.695401  -0.849934   1.08173
+```
+"""
+standardise(X::FloatVector) = (X .- mean(X))./std(X);
+standardise(X::FloatMatrix) = (X .- mean(X,dims=2))./std(X,dims=2);
+standardise(X::JVector) = (X .- mean_skipmissing(X))./std_skipmissing(X);
+standardise(X::JArray) = (X .- mean_skipmissing(X))./std_skipmissing(X);
+
+"""
     interpolate(X::JArray{Float64}, n::Int64, T::Int64)
 
 Interpolate each series in `X`, in turn, by replacing missing observations with the sample average of the non-missing values.
