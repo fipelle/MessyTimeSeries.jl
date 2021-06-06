@@ -289,10 +289,14 @@ function centred_moving_average(X::Union{JArray{Float64}, FloatArray}, n::Int64,
     one_sided_window = (window_adj-1)/2 |> Int64;
 
     # Compute centred moving average
-    data = missing .* zeros(n,T);
+    data = missing .* zeros(n,T) |> JArray{Float64};
     for t=one_sided_window+1:T-one_sided_window
         for i=1:n
-            data[i,t] .= mean_skipmissing(X[i, t-one_sided_window:t+one_sided_window]);
+            # Convenient view
+            X_window = @view X[i, t-one_sided_window:t+one_sided_window];
+            if sum(ismissing.(X_window)) < window_adj
+                data[i,t] = mean_skipmissing(X[i, t-one_sided_window:t+one_sided_window]);
+            end
         end
     end
 
