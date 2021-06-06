@@ -266,7 +266,7 @@ end
 interpolate(X::FloatArray, n::Int64, T::Int64) = X;
 
 """
-    centred_moving_average(X::JArray{Float64}, n::Int64, T::Int64, window::Int64)
+    centred_moving_average(X::Union{JArray{Float64}, FloatArray}, n::Int64, T::Int64, window::Int64)
 
 Compute the centred moving average of `X`.
 
@@ -275,7 +275,7 @@ Compute the centred moving average of `X`.
 - `n` and `T` are the number of series and observations
 - `window` is the total number of observations (lagging, current and leading) included in the average
 """
-function centred_moving_average(X::JArray{Float64}, n::Int64, T::Int64, window::Int64)
+function centred_moving_average(X::Union{JArray{Float64}, FloatArray}, n::Int64, T::Int64, window::Int64)
 
     # Checks on the moving average window
     check_bounds(T, 3);
