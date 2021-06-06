@@ -20,7 +20,7 @@ module TSAnalysis
            ARIMASettings, VARIMASettings;
 
     # Export methods
-    export check_bounds, isnothing, error_info, verb_message, interpolate, soft_thresholding, isconverged,
+    export check_bounds, isnothing, error_info, verb_message, interpolate, centred_moving_average, soft_thresholding, isconverged,
             mean_skipmissing, std_skipmissing, is_vector_in_matrix, demean, standardise, lag, companion_form;
 
     # Export functions
