@@ -266,6 +266,40 @@ end
 interpolate(X::FloatArray, n::Int64, T::Int64) = X;
 
 """
+    centred_moving_average(X::JArray{Float64}, n::Int64, T::Int64, window::Int64)
+
+Compute the centred moving average of `X`.
+
+# Arguments
+- `X`: observed measurements (`nxT`)
+- `n` and `T` are the number of series and observations
+- `window` is the total number of observations (lagging, current and leading) included in the average
+"""
+function centred_moving_average(X::JArray{Float64}, n::Int64, T::Int64, window::Int64)
+
+    # Checks on the moving average window
+    check_bounds(T, 3);
+    check_bounds(window, 3, T);
+
+    # window_adj must be odd
+    window_adj = copy(window);
+    if mod(window-1,2) != 0
+        window_adj = window-1;
+    end
+    one_sided_window = (window_adj-1)/2 |> Int64;
+
+    # Compute centred moving average
+    data = missing .* zeros(n,T);
+    for t=one_sided_window+1:T-one_sided_window
+        for i=1:n
+            data[i,t] .= mean_skipmissing(X[i, t-one_sided_window:t+one_sided_window]);
+        end
+    end
+
+    return data;
+end
+
+"""
     lag(X::FloatArray, p::Int64)
 
 Construct the data required to run a standard vector autoregression.
