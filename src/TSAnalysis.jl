@@ -20,8 +20,8 @@ module TSAnalysis
            ARIMASettings, VARIMASettings;
 
     # Export methods
-    export check_bounds, isnothing, error_info, verb_message, interpolate, centred_moving_average, soft_thresholding, isconverged,
-            mean_skipmissing, std_skipmissing, is_vector_in_matrix, demean, standardise, lag, companion_form;
+    export check_bounds, isnothing, error_info, verb_message, interpolate, forward_backwards_rw_interpolation, centred_moving_average,
+            soft_thresholding, isconverged, mean_skipmissing, std_skipmissing, is_vector_in_matrix, demean, standardise, lag, companion_form;
 
     # Export functions
     export kfilter!, kforecast, ksmoother, fmin_uc_models, arima, varima, forecast,
