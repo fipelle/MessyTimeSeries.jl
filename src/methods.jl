@@ -240,7 +240,7 @@ standardise(X::JVector) = (X .- mean_skipmissing(X))./std_skipmissing(X);
 standardise(X::JArray) = (X .- mean_skipmissing(X))./std_skipmissing(X);
 
 """
-    interpolate(X::JArray{Float64}, n::Int64, T::Int64)
+    interpolate(X::JArray{Float64,2}, n::Int64, T::Int64)
 
 Interpolate each series in `X`, in turn, by replacing missing observations with the sample average of the non-missing values.
 
@@ -248,13 +248,15 @@ Interpolate each series in `X`, in turn, by replacing missing observations with 
 - `X`: observed measurements (`nxT`)
 - `n` and `T` are the number of series and observations
 
-    interpolate(X::Array{Float64}, n::Int64, T::Int64)
+    interpolate(X::FloatMatrix, n::Int64, T::Int64)
+
+Return `X`.
 
 # Arguments
 - `X`: observed measurements (`nxT`)
 - `n` and `T` are the number of series and observations
 """
-function interpolate(X::JArray{Float64}, n::Int64, T::Int64)
+function interpolate(X::JArray{Float64,2}, n::Int64, T::Int64)
     data = copy(X);
     for i=1:n
         data[i, ismissing.(X[i, :])] .= mean_skipmissing(X[i, :]);
@@ -263,7 +265,51 @@ function interpolate(X::JArray{Float64}, n::Int64, T::Int64)
     return data;
 end
 
-interpolate(X::FloatArray, n::Int64, T::Int64) = X;
+interpolate(X::FloatMatrix, n::Int64, T::Int64) = X;
+
+"""
+    forward_backwards_rw_interpolation(X::JArray{Float64,2}, n::Int64, T::Int64)
+
+Interpolate each non-stationary series in `X`, in turn, using a random walk logic both forward and backwards in time.
+
+# Arguments
+- `X`: observed measurements (`nxT`)
+- `n` and `T` are the number of series and observations
+
+    forward_backwards_rw_interpolation(X::FloatMatrix, n::Int64, T::Int64)
+
+Return `X`.
+"""
+function forward_backwards_rw_interpolation(X::JArray{Float64,2}, n::Int64, T::Int64)
+
+    data = copy(X);
+
+    # Loop over n and T
+    for i=1:n
+
+        # Forward interpolation
+        drift_forward = mean_skipmissing(diff(data, dims=2))[:];
+        for t=2:T
+            if ismissing(data[i,t]) && ~ismissing(data[i,t-1])
+                data[i,t] = data[i,t-1] + drift_forward[i];
+            end
+        end
+
+        # Backwards interpolation
+        drift_backwards = mean_skipmissing(diff(data, dims=2))[:];
+        for t=T:-1:1
+            if ismissing(data[i,t]) && ~ismissing(data[i,t+1])
+                data[i,t] = data[i,t+1] - drift_backwards[i];
+            end
+        end
+    end
+
+    # Return interpolated data
+    data = data |> FloatMatrix;
+    return data;
+end
+
+forward_backwards_rw_interpolation(X::FloatMatrix, n::Int64, T::Int64) = X;
 
 """
     centred_moving_average(X::Union{JArray{Float64}, FloatArray}, n::Int64, T::Int64, window::Int64)
