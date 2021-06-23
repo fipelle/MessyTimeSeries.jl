@@ -41,6 +41,34 @@ error_info(err::Exception) = (err, err.msg, stacktrace(catch_backtrace()));
 error_info(err::RemoteException) = (err.captured.ex, err.captured.ex.msg, [err.captured.processed_bt[i][1] for i=1:length(err.captured.processed_bt)]);
 
 """
+    sum_skipmissing(X::AbstractArray{Float64,1})
+    sum_skipmissing(X::AbstractArray{Union{Missing, Float64},1})
+
+Compute the sum of the observed values in `X`.
+
+    sum_skipmissing(X::AbstractArray{Float64})
+    sum_skipmissing(X::AbstractArray{Union{Missing, Float64}})
+
+Compute the sum of the observed values in `X` column wise.
+
+# Examples
+```jldoctest
+julia> sum_skipmissing([1.0; missing; 3.0])
+4.0
+
+julia> sum_skipmissing([1.0 2.0; missing 3.0; 3.0 5.0])
+3-element Array{Float64,1}:
+ 3.0
+ 3.0
+ 8.0
+```
+"""
+sum_skipmissing(X::AbstractArray{Float64,1}) = sum(X);
+sum_skipmissing(X::AbstractArray{Float64}) = sum(X, dims=2);
+sum_skipmissing(X::AbstractArray{Union{Missing, Float64},1}) = sum(skipmissing(X));
+sum_skipmissing(X::AbstractArray{Union{Missing, Float64}}) = vcat([sum_skipmissing(X[i,:]) for i=1:size(X,1)]...);
+
+"""
     mean_skipmissing(X::AbstractArray{Float64,1})
     mean_skipmissing(X::AbstractArray{Union{Missing, Float64},1})
 
