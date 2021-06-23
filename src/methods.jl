@@ -66,7 +66,17 @@ julia> sum_skipmissing([1.0 2.0; missing 3.0; 3.0 5.0])
 sum_skipmissing(X::AbstractArray{Float64,1}) = sum(X);
 sum_skipmissing(X::AbstractArray{Float64}) = sum(X, dims=2);
 sum_skipmissing(X::AbstractArray{Union{Missing, Float64},1}) = sum(skipmissing(X));
-sum_skipmissing(X::AbstractArray{Union{Missing, Float64}}) = vcat([sum_skipmissing(X[i,:]) for i=1:size(X,1)]...);
+
+function sum_skipmissing(X::AbstractArray{Union{Missing, Float64}})
+    n = size(X,1);
+    output = zeros(n);
+    for i=1:n
+        Xi = @view X[i,:];
+        output[i] = sum(skipmissing(Xi));
+    end
+
+    return output;
+end
 
 """
     mean_skipmissing(X::AbstractArray{Float64,1})
@@ -94,7 +104,17 @@ julia> mean_skipmissing([1.0 2.0; missing 3.0; 3.0 5.0])
 mean_skipmissing(X::AbstractArray{Float64,1}) = mean(X);
 mean_skipmissing(X::AbstractArray{Float64}) = mean(X, dims=2);
 mean_skipmissing(X::AbstractArray{Union{Missing, Float64},1}) = mean(skipmissing(X));
-mean_skipmissing(X::AbstractArray{Union{Missing, Float64}}) = vcat([mean_skipmissing(X[i,:]) for i=1:size(X,1)]...);
+
+function mean_skipmissing(X::AbstractArray{Union{Missing, Float64}})
+    n = size(X,1);
+    output = zeros(n);
+    for i=1:n
+        Xi = @view X[i,:];
+        output[i] = mean(skipmissing(Xi));
+    end
+
+    return output;
+end
 
 """
     std_skipmissing(X::AbstractArray{Float64,1})
@@ -122,7 +142,17 @@ julia> std_skipmissing([1.0 2.0; missing 3.0; 3.0 5.0])
 std_skipmissing(X::AbstractArray{Float64,1}) = std(X);
 std_skipmissing(X::AbstractArray{Float64}) = std(X, dims=2);
 std_skipmissing(X::AbstractArray{Union{Missing, Float64},1}) = std(skipmissing(X));
-std_skipmissing(X::AbstractArray{Union{Missing, Float64}}) = vcat([std_skipmissing(X[i,:]) for i=1:size(X,1)]...);
+
+function std_skipmissing(X::AbstractArray{Union{Missing, Float64}})
+    n = size(X,1);
+    output = zeros(n);
+    for i=1:n
+        Xi = @view X[i,:];
+        output[i] = std(skipmissing(Xi));
+    end
+
+    return output;
+end
 
 """
     is_vector_in_matrix(vect::AbstractVector, matr::AbstractMatrix)
