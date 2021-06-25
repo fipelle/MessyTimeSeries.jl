@@ -205,6 +205,20 @@ function kfilter!(settings::KalmanSettings, status::KalmanStatus)
 end
 
 """
+    kfilter_full_sample(sspace::KalmanSettings)
+
+Run Kalman filter from t=1 to T.
+"""
+function kfilter_full_sample(sspace::KalmanSettings)
+    status = KalmanStatus();
+    for t=1:sspace.T
+        kfilter!(sspace, status);
+    end
+
+    return status;
+end
+
+"""
     kforecast(settings::KalmanSettings, X::Union{FloatVector, Nothing}, h::Int64)
 
 Forecast X up to h-step ahead.
