@@ -431,13 +431,13 @@ function lag(X::FloatArray, p::Int64)
 end
 
 """
-    companion_form(Ψ::FloatMatrix; extended::Bool=false)
+    companion_form(Ψ::AbstractArray{Float64,2}; extended::Bool=false)
 
 Construct the companion form matrix from the generic coefficients Ψ. 
 
 If extended is true, it increases the typical dimension of the companion matrix by n rows.
 """
-function companion_form(Ψ::FloatMatrix; extended::Bool=false)
+function companion_form(Ψ::AbstractArray{Float64,2}; extended::Bool=false)
 
     # Dimensions
     n = size(Ψ,1);
@@ -449,7 +449,7 @@ function companion_form(Ψ::FloatMatrix; extended::Bool=false)
     total_rows = standard_rows + extra_rows;
 
     # Return companion matrix
-    companion = [Ψ zeros(n, extra_rows); Matrix(I, total_rows, total_rows) zeros(total_rows, n)];
+    companion = [Ψ zeros(n, extra_rows); Matrix(I, total_rows, total_rows) zeros(total_rows, n)]::FloatMatrix;
     return companion;
 end
 
