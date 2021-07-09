@@ -41,6 +41,15 @@ error_info(err::Exception) = (err, err.msg, stacktrace(catch_backtrace()));
 error_info(err::RemoteException) = (err.captured.ex, err.captured.ex.msg, [err.captured.processed_bt[i][1] for i=1:length(err.captured.processed_bt)]);
 
 """
+    nan_to_missing!(X::JArray{Float64})
+
+Replace NaN with missing in `X`.
+"""
+function nan_to_missing!(X::JArray{Float64})
+    X[isnan.(X) .=== true] .= missing;
+end
+
+"""
     sum_skipmissing(X::AbstractArray{Float64,1})
     sum_skipmissing(X::AbstractArray{Union{Missing, Float64},1})
 
