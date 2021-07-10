@@ -219,8 +219,9 @@ Kailath (1980, page 180)
 function solve_discrete_lyapunov(A::FloatMatrix, Q::SymMatrix)
 
     # Compute tranformed parameters
-    B_tr = (A+I)\(A-I); # alias for B'
-    C = 0.5*(A+I)\Q/(A'+I);
+    inv_A_plus_I = inv(A+I);
+    B_tr = inv_A_plus_I*(A-I); # alias for B'
+    C = 2*inv_A_plus_I*Q*inv_A_plus_I'; # the scalar `2` is correct
 
     # Return solution
     return Symmetric(lyap(B_tr, C))::SymMatrix;
