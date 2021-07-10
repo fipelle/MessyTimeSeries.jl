@@ -73,7 +73,7 @@ function ImmutableKalmanSettings(Y::Union{FloatMatrix, JArray{Float64,2}}, B::Fl
     m = size(B,2);
     D = Matrix(I, m, m) |> FloatMatrix;
     X0 = zeros(m);
-    P0 = Symmetric(reshape((I-kron(C, C))\Q[:], m, m));
+    P0 = solve_discrete_lyapunov(C, Q);
 
     # Return ImmutableKalmanSettings
     return ImmutableKalmanSettings(Y, B, R, C, D, Q, X0, P0, Q, n, T, m, compute_loglik, store_history);
@@ -87,7 +87,7 @@ function ImmutableKalmanSettings(Y::Union{FloatMatrix, JArray{Float64,2}}, B::Fl
     m = size(B,2);
     X0 = zeros(m);
     DQD = Symmetric(D*Q*D');
-    P0 = Symmetric(reshape((I-kron(C, C))\DQD[:], m, m));
+    P0 = solve_discrete_lyapunov(C, DQD);
 
     # Return ImmutableKalmanSettings
     return ImmutableKalmanSettings(Y, B, R, C, D, Q, X0, P0, DQD, n, T, m, compute_loglik, store_history);

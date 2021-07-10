@@ -21,7 +21,7 @@ module TSAnalysis
 
     # Export methods
     export check_bounds, isnothing, nan_to_missing!, error_info, verb_message, interpolate, forward_backwards_rw_interpolation, centred_moving_average,
-            soft_thresholding, isconverged, sum_skipmissing, mean_skipmissing, std_skipmissing, is_vector_in_matrix, demean, standardise, lag, companion_form;
+            soft_thresholding, solve_discrete_lyapunov, isconverged, sum_skipmissing, mean_skipmissing, std_skipmissing, is_vector_in_matrix, demean, standardise, lag, companion_form;
 
     # Export functions
     export kfilter!, kfilter_full_sample, kforecast, ksmoother, fmin_uc_models, arima, varima, forecast,
