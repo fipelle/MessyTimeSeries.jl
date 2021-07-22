@@ -57,7 +57,7 @@ Compute the trimmed mean of `X` (i.e., the sample average of `X` having removed 
 function trimmed_mean(X::AbstractArray{Float64,1}, α::Float64)
     
     # Check bounds for α
-    check_bounds(α, 0, 1);
+    check_bounds(α, 0, 0.5);
     
     # Compute trimmed mean
     trimmed_sample = @view X[quantile(X, α) .<= X .<= quantile(X, 1-α)];
