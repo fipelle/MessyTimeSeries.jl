@@ -5,7 +5,7 @@ Subsampling: Jackknife
 =#
 
 """
-    block_jackknife(Y::Union{FloatMatrix, JArray{Float64,2}}, subsample::Float64)
+    block_jackknife(Y::Union{FloatMatrix, JMatrix{Float64}}, subsample::Float64)
 
 Generate block jackknife (Kunsch, 1989) samples. This implementation is described in Pellegrino (2020).
 
@@ -18,7 +18,7 @@ This technique subsamples a time series dataset by removing, in turn, all the bl
 # References
 Kunsch (1989) and Pellegrino (2020).
 """
-function block_jackknife(Y::Union{FloatMatrix, JArray{Float64,2}}, subsample::Float64)
+function block_jackknife(Y::Union{FloatMatrix, JMatrix{Float64}}, subsample::Float64)
 
     # Check inputs
     check_bounds(subsample, 0, 1);
@@ -93,7 +93,7 @@ function objfun_optimal_d(n::Int64, T::Int64, d::Int64)
 end
 
 """
-    artificial_jackknife(Y::Union{FloatMatrix, JArray{Float64,2}}, subsample::Float64, max_samples::Int64)
+    artificial_jackknife(Y::Union{FloatMatrix, JMatrix{Float64}}, subsample::Float64, max_samples::Int64)
 
 Generate artificial jackknife samples as in Pellegrino (2020).
 
@@ -109,7 +109,7 @@ The artificial delete-d jackknife is an extension of the delete-d jackknife for 
 # References
 Pellegrino (2020).
 """
-function artificial_jackknife(Y::Union{FloatMatrix, JArray{Float64,2}}, subsample::Float64, max_samples::Int64)
+function artificial_jackknife(Y::Union{FloatMatrix, JMatrix{Float64}}, subsample::Float64, max_samples::Int64)
 
     # Dimensions
     n, T = size(Y);
@@ -132,7 +132,7 @@ function artificial_jackknife(Y::Union{FloatMatrix, JArray{Float64,2}}, subsampl
     end
 
     # Get vec(Y)
-    vec_Y = convert(JArray{Float64}, Y[:]);
+    vec_Y = Y[:] |> JVector{Float64};
 
     # Initialise loop (controls)
     C_nT_d = no_combinations(nT, d);
@@ -184,7 +184,7 @@ Subsampling: Bootstrap
 =#
 
 """
-    moving_block_bootstrap(Y::Union{FloatMatrix, JArray{Float64,2}}, subsample::Float64, samples::Int64)
+    moving_block_bootstrap(Y::Union{FloatMatrix, JMatrix{Float64}}, subsample::Float64, samples::Int64)
 
 Generate moving block bootstrap samples.
 
@@ -198,7 +198,7 @@ The moving block bootstrap randomly subsamples a time series into ordered and ov
 # References
 Kunsch (1989) and Liu and Singh (1992).
 """
-function moving_block_bootstrap(Y::Union{FloatMatrix, JArray{Float64,2}}, subsample::Float64, samples::Int64)
+function moving_block_bootstrap(Y::Union{FloatMatrix, JMatrix{Float64}}, subsample::Float64, samples::Int64)
 
     # Check inputs
     check_bounds(subsample, 0, 1);
@@ -230,7 +230,7 @@ function moving_block_bootstrap(Y::Union{FloatMatrix, JArray{Float64,2}}, subsam
 end
 
 """
-    stationary_block_bootstrap(Y::Union{FloatMatrix, JArray{Float64,2}}, subsample::Float64, samples::Int64)
+    stationary_block_bootstrap(Y::Union{FloatMatrix, JMatrix{Float64}}, subsample::Float64, samples::Int64)
 
 Generate stationary block bootstrap samples.
 
@@ -250,7 +250,7 @@ Note: Block size is exponentially distributed with mean `Int64(ceil(subsample*T)
 # References
 Politis and Romano (1994).
 """
-function stationary_block_bootstrap(Y::Union{FloatMatrix, JArray{Float64,2}}, subsample::Float64, samples::Int64)
+function stationary_block_bootstrap(Y::Union{FloatMatrix, JMatrix{Float64}}, subsample::Float64, samples::Int64)
 
     # Check inputs
     check_bounds(subsample, 0, 1);

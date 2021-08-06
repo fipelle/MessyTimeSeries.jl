@@ -20,16 +20,16 @@ isnothing(::Nothing) = true;
 verb_message(verb::Bool, message::String) = verb ? @info(message) : nothing;
 
 """
-    check_bounds(X::Number, LB::Number, UB::Number)
+    check_bounds(X::Real, LB::Real, UB::Real)
 
 Check whether `X` is larger or equal than `LB` and lower or equal than `UB`
 
-    check_bounds(X::Number, LB::Number)
+    check_bounds(X::Real, LB::Real)
 
 Check whether `X` is larger or equal than `LB`
 """
-check_bounds(X::Number, LB::Number, UB::Number) = X < LB || X > UB ? throw(DomainError) : nothing
-check_bounds(X::Number, LB::Number) = X < LB ? throw(DomainError) : nothing
+check_bounds(X::Real, LB::Real, UB::Real) = X < LB || X > UB ? throw(DomainError) : nothing
+check_bounds(X::Real, LB::Real) = X < LB ? throw(DomainError) : nothing
 
 """
     error_info(err::Exception)
@@ -179,15 +179,17 @@ function std_skipmissing(X::AbstractArray{Union{Missing, Float64}})
 end
 
 """
-    is_vector_in_matrix(vect::AbstractVector, matr::AbstractMatrix)
+    is_vector_in_matrix(vect::IntVector, matr::IntMatrix)
+    is_vector_in_matrix(vect::FloatVector, matr::FloatMatrix)
 
 Check whether the vector `vect` is included in the matrix `matr`.
 
 # Examples
-julia> is_vector_in_matrix([1;2], [1 2; 2 3])
+julia> is_vector_in_matrix([1; 2], [1 2; 2 3])
 true
 """
-is_vector_in_matrix(vect::AbstractVector, matr::AbstractMatrix) = sum(sum(vect .== matr, dims=1) .== length(vect)) > 0;
+is_vector_in_matrix(vect::IntVector, matr::IntMatrix) = sum(sum(vect .== matr, dims=1) .== length(vect)) > 0;
+is_vector_in_matrix(vect::FloatVector, matr::FloatMatrix) = sum(sum(vect .== matr, dims=1) .== length(vect)) > 0;
 
 """
     isconverged(new::Float64, old::Float64, tol::Float64, ε::Float64, increasing::Bool)
@@ -284,14 +286,14 @@ Time series
 
 """
     demean(X::FloatVector)
-    demean(X::JVector)
-
-Demean data.
-
     demean(X::FloatMatrix)
-    demean(X::JArray)
 
-Demean data.
+Demean complete data.
+
+    demean(X::JVector{Float64})
+    demean(X::JMatrix{Float64})
+
+Demean incomplete data.
 
 # Examples
 ```jldoctest
@@ -311,19 +313,19 @@ julia> demean([1.0 3.5 1.5 4.0 2.0; 4.5 2.5 5.0 3.0 5.5])
 """
 demean(X::FloatVector) = X .- mean(X);
 demean(X::FloatMatrix) = X .- mean(X,dims=2);
-demean(X::JVector) = X .- mean_skipmissing(X);
-demean(X::JArray) = X .- mean_skipmissing(X);
+demean(X::JVector{Float64}) = X .- mean_skipmissing(X);
+demean(X::JMatrix{Float64}) = X .- mean_skipmissing(X);
 
 """
     standardise(X::FloatVector)
-    standardise(X::JVector)
-
-Demean data.
-
     standardise(X::FloatMatrix)
-    standardise(X::JArray)
 
-Demean data.
+Demean complete data.
+
+    standardise(X::JVector{Float64})
+    standardise(X::JMatrix{Float64})
+
+Demean incomplete data.
 
 # Examples
 ```jldoctest
@@ -343,11 +345,11 @@ julia> standardise([1.0 3.5 1.5 4.0 2.0; 4.5 2.5 5.0 3.0 5.5])
 """
 standardise(X::FloatVector) = (X .- mean(X))./std(X);
 standardise(X::FloatMatrix) = (X .- mean(X,dims=2))./std(X,dims=2);
-standardise(X::JVector) = (X .- mean_skipmissing(X))./std_skipmissing(X);
-standardise(X::JArray) = (X .- mean_skipmissing(X))./std_skipmissing(X);
+standardise(X::JVector{Float64}) = (X .- mean_skipmissing(X))./std_skipmissing(X);
+standardise(X::JMatrix{Float64}) = (X .- mean_skipmissing(X))./std_skipmissing(X);
 
 """
-    interpolate(X::JArray{Float64,2}, n::Int64, T::Int64)
+    interpolate_series(X::JMatrix{Float64}, n::Int64, T::Int64)
 
 Interpolate each series in `X`, in turn, by replacing missing observations with the sample average of the non-missing values.
 
@@ -355,7 +357,7 @@ Interpolate each series in `X`, in turn, by replacing missing observations with 
 - `X`: observed measurements (`nxT`)
 - `n` and `T` are the number of series and observations
 
-    interpolate(X::FloatMatrix, n::Int64, T::Int64)
+    interpolate_series(X::FloatMatrix, n::Int64, T::Int64)
 
 Return `X`.
 
@@ -363,19 +365,19 @@ Return `X`.
 - `X`: observed measurements (`nxT`)
 - `n` and `T` are the number of series and observations
 """
-function interpolate(X::JArray{Float64,2}, n::Int64, T::Int64)
+function interpolate_series(X::JMatrix{Float64}, n::Int64, T::Int64)
     data = copy(X);
     for i=1:n
         data[i, ismissing.(X[i, :])] .= mean_skipmissing(X[i, :]);
     end
-    data = data |> FloatArray;
-    return data;
+    output = data |> FloatMatrix;
+    return output;
 end
 
-interpolate(X::FloatMatrix, n::Int64, T::Int64) = X;
+interpolate_series(X::FloatMatrix, n::Int64, T::Int64) = X;
 
 """
-    forward_backwards_rw_interpolation(X::JArray{Float64,2}, n::Int64, T::Int64)
+    forward_backwards_rw_interpolation(X::JMatrix{Float64}, n::Int64, T::Int64)
 
 Interpolate each non-stationary series in `X`, in turn, using a random walk logic both forward and backwards in time.
 
@@ -387,7 +389,7 @@ Interpolate each non-stationary series in `X`, in turn, using a random walk logi
 
 Return `X`.
 """
-function forward_backwards_rw_interpolation(X::JArray{Float64,2}, n::Int64, T::Int64)
+function forward_backwards_rw_interpolation(X::JMatrix{Float64}, n::Int64, T::Int64)
 
     data = copy(X);
 
@@ -412,14 +414,14 @@ function forward_backwards_rw_interpolation(X::JArray{Float64,2}, n::Int64, T::I
     end
 
     # Return interpolated data
-    data = data |> FloatMatrix;
-    return data;
+    output = data |> FloatMatrix;
+    return output;
 end
 
 forward_backwards_rw_interpolation(X::FloatMatrix, n::Int64, T::Int64) = X;
 
 """
-    centred_moving_average(X::Union{JArray{Float64}, FloatArray}, n::Int64, T::Int64, window::Int64)
+    centred_moving_average(X::Union{FloatMatrix, JMatrix{Float64}}, n::Int64, T::Int64, window::Int64)
 
 Compute the centred moving average of `X`.
 
@@ -428,7 +430,7 @@ Compute the centred moving average of `X`.
 - `n` and `T` are the number of series and observations
 - `window` is the total number of observations (lagging, current and leading) included in the average
 """
-function centred_moving_average(X::Union{JArray{Float64}, FloatArray}, n::Int64, T::Int64, window::Int64)
+function centred_moving_average(X::Union{FloatMatrix, JMatrix{Float64}}, n::Int64, T::Int64, window::Int64)
 
     # Checks on the moving average window
     check_bounds(T, 3);
@@ -442,7 +444,7 @@ function centred_moving_average(X::Union{JArray{Float64}, FloatArray}, n::Int64,
     one_sided_window = (window_adj-1)/2 |> Int64;
 
     # Compute centred moving average
-    data = missing .* zeros(n,T) |> JArray{Float64};
+    data = missing .* zeros(n,T) |> JMatrix{Float64};
     for t=one_sided_window+1:T-one_sided_window
         for i=1:n
             # Convenient view
