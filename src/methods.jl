@@ -248,14 +248,7 @@ function solve_discrete_lyapunov(A::FloatMatrix, Q::SymMatrix)
 end
 
 function solve_discrete_lyapunov(A::SparseFloatMatrix, Q::SymMatrix)
-
-    # Compute tranformed parameters
-    inv_A_plus_I = inv(A+I);
-    B_tr = inv_A_plus_I*(A-I); # alias for B'
-    C = 2*inv_A_plus_I*Q*inv_A_plus_I'; # the scalar `2` is correct
-
-    # Return solution
-    return Symmetric(lyap(B_tr, C))::SymMatrix;
+    return solve_discrete_lyapunov(Array(A), Q);
 end
 
 #=

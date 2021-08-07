@@ -76,7 +76,7 @@ function ImmutableKalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::Spa
     # Compute default value for missing parameters
     n, T = size(Y);
     m = size(B, 2);
-    D = sparse(Matrix(I, m, m))::SparseFloatMatrix;
+    D = sparse(Matrix(1.0I, m, m))::SparseFloatMatrix;
     X0 = zeros(m);
     P0 = solve_discrete_lyapunov(C, Q);
 
@@ -157,7 +157,7 @@ function MutableKalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::Spars
     # Compute default value for missing parameters
     n, T = size(Y);
     m = size(B, 2);
-    D = sparse(Matrix(I, m, m))::SparseFloatMatrix;
+    D = sparse(Matrix(1.0I, m, m))::SparseFloatMatrix;
     X0 = zeros(m);
     P0 = solve_discrete_lyapunov(C, Q);
 
