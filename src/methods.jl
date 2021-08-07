@@ -220,8 +220,7 @@ Construct square vandermonde matrix on the basis of a vector of eigenvalues λ.
 square_vandermonde_matrix(λ::FloatVector) = λ'.^collect(length(λ)-1:-1:0);
 
 """
-    solve_discrete_lyapunov(A::FloatMatrix, Q::SymMatrix)
-    solve_discrete_lyapunov(A::SparseFloatMatrix, Q::SymMatrix)
+    solve_discrete_lyapunov(A::AbstractArray{Float64,2}, Q::SymMatrix)
 
 Use a bilinear transformation to convert the discrete Lyapunov equation to a continuous Lyapunov equation, which is then solved using BLAS.
 
@@ -236,7 +235,7 @@ where `P` and `Q` are symmetric. This equation is transformed into
 # References
 Kailath (1980, page 180)
 """
-function solve_discrete_lyapunov(A::FloatMatrix, Q::SymMatrix)
+function solve_discrete_lyapunov(A::AbstractArray{Float64,2}, Q::SymMatrix)
 
     # Compute tranformed parameters
     inv_A_plus_I = inv(A+I);
@@ -245,10 +244,6 @@ function solve_discrete_lyapunov(A::FloatMatrix, Q::SymMatrix)
 
     # Return solution
     return Symmetric(lyap(B_tr, C))::SymMatrix;
-end
-
-function solve_discrete_lyapunov(A::SparseFloatMatrix, Q::SymMatrix)
-    return solve_discrete_lyapunov(Array(A), Q);
 end
 
 #=
