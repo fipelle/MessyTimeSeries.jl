@@ -4,7 +4,7 @@
 Return true if the entries of ksettings are correct (false otherwise).
 """
 function ksettings_input_test(ksettings::KalmanSettings, Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatArray, P0::SymMatrix, DQD::SymMatrix, n::Int64, T::Int64, m::Int64; compute_loglik::Bool=true, store_history::Bool=true)
-    return ~false in [ksettings.Y == Y;
+    return ~(false in [ksettings.Y === Y;
                       ksettings.B == B;
                       ksettings.R == R;
                       ksettings.C == C;
@@ -17,7 +17,7 @@ function ksettings_input_test(ksettings::KalmanSettings, Y::JArray, B::FloatMatr
                       ksettings.T == T;
                       ksettings.m == m;
                       ksettings.compute_loglik == compute_loglik;
-                      ksettings.store_history == store_history];
+                      ksettings.store_history == store_history]);
 end
 
 """
@@ -254,7 +254,7 @@ end
     benchmark_P_sm = read_test_input("./input/multivariate_non_diagonal/benchmark_P_sm");
 
     # Benchmark data
-    benchmark_data = (2, size(Y,2), 2, benchmark_X0, benchmark_P0, benchmark_DQD, benchmark_X_prior, benchmark_P_prior, benchmark_X_post, benchmark_P_post, benchmark_X_fc, benchmark_P_fc, benchmark_loglik,
+    benchmark_data = (3, size(Y,2), 2, benchmark_X0, benchmark_P0, benchmark_DQD, benchmark_X_prior, benchmark_P_prior, benchmark_X_post, benchmark_P_post, benchmark_X_fc, benchmark_P_fc, benchmark_loglik,
                       benchmark_X0_sm, benchmark_P0_sm, benchmark_X_sm, benchmark_P_sm);
 
     # Run tests
