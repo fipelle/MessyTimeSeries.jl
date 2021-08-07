@@ -67,7 +67,7 @@ struct ImmutableKalmanSettings <: KalmanSettings
 end
 
 #=
-ImmutableKalmanSettings constructors with SparseFloatMatrices
+ImmutableKalmanSettings constructors
 =#
 
 function ImmutableKalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, Q::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
@@ -132,7 +132,7 @@ mutable struct MutableKalmanSettings <: KalmanSettings
 end
 
 #=
-MutableKalmanSettings constructors with SparseFloatMatrices
+MutableKalmanSettings constructors
 =#
 
 function MutableKalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, Q::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
