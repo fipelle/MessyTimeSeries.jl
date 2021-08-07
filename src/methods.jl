@@ -220,6 +220,9 @@ Construct square vandermonde matrix on the basis of a vector of eigenvalues λ.
 square_vandermonde_matrix(λ::FloatVector) = λ'.^collect(length(λ)-1:-1:0);
 
 """
+    solve_discrete_lyapunov(A::FloatMatrix, Q::SymMatrix)
+    solve_discrete_lyapunov(A::SparseFloatMatrix, Q::SymMatrix)
+
 Use a bilinear transformation to convert the discrete Lyapunov equation to a continuous Lyapunov equation, which is then solved using BLAS.
 
 The notation used for representing the discrete Lyapunov equation is
@@ -234,6 +237,17 @@ where `P` and `Q` are symmetric. This equation is transformed into
 Kailath (1980, page 180)
 """
 function solve_discrete_lyapunov(A::FloatMatrix, Q::SymMatrix)
+
+    # Compute tranformed parameters
+    inv_A_plus_I = inv(A+I);
+    B_tr = inv_A_plus_I*(A-I); # alias for B'
+    C = 2*inv_A_plus_I*Q*inv_A_plus_I'; # the scalar `2` is correct
+
+    # Return solution
+    return Symmetric(lyap(B_tr, C))::SymMatrix;
+end
+
+function solve_discrete_lyapunov(A::SparseFloatMatrix, Q::SymMatrix)
 
     # Compute tranformed parameters
     inv_A_plus_I = inv(A+I);
@@ -320,12 +334,12 @@ demean(X::JMatrix{Float64}) = X .- mean_skipmissing(X);
     standardise(X::FloatVector)
     standardise(X::FloatMatrix)
 
-Demean complete data.
+Standardise complete data.
 
     standardise(X::JVector{Float64})
     standardise(X::JMatrix{Float64})
 
-Demean incomplete data.
+Standardise incomplete data.
 
 # Examples
 ```jldoctest

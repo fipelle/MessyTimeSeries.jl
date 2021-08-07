@@ -4,7 +4,7 @@ module TSAnalysis
 
     # Libraries
     using Dates, Distributed, Logging;
-    using LinearAlgebra, Distributions, Statistics;
+    using LinearAlgebra, Distributions, SparseArrays, Statistics;
 
     # Custom dependencies
     const local_path = dirname(@__FILE__);
@@ -15,7 +15,7 @@ module TSAnalysis
     #include("$local_path/uc_models.jl");
 
     # Export types
-    export JVector, JMatrix, JArray, IntVector, IntMatrix, IntArray, FloatVector, FloatMatrix, FloatArray, SymMatrix, DiagMatrix,
+    export IntVector, IntMatrix, IntArray, FloatVector, FloatMatrix, FloatArray, JVector, JMatrix, JArray, DiagMatrix, SymMatrix, SparseFloatMatrix,
            KalmanSettings, ImmutableKalmanSettings, MutableKalmanSettings, KalmanStatus,
            ARIMASettings, VARIMASettings;
 
