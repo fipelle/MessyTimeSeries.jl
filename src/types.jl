@@ -90,7 +90,7 @@ function ImmutableKalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::Spa
     n, T = size(Y);
     m = size(B, 2);
     X0 = zeros(m);
-    DQD = Symmetric(D*Q*D');
+    DQD = Symmetric(Array(D*Q*D'));
     P0 = solve_discrete_lyapunov(C, DQD);
 
     # Return ImmutableKalmanSettings
@@ -102,7 +102,7 @@ function ImmutableKalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::Spa
     # Compute default value for missing parameters
     n, T = size(Y);
     m = size(B, 2);
-    DQD = Symmetric(D*Q*D');
+    DQD = Symmetric(Array(D*Q*D'));
 
     # Return ImmutableKalmanSettings
     return ImmutableKalmanSettings(Y, B, R, C, D, Q, X0, P0, DQD, n, T, m, compute_loglik, store_history);
@@ -171,7 +171,7 @@ function MutableKalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::Spars
     n, T = size(Y);
     m = size(B, 2);
     X0 = zeros(m);
-    DQD = Symmetric(D*Q*D');
+    DQD = Symmetric(Array(D*Q*D'));
     P0 = solve_discrete_lyapunov(C, DQD);
 
     # Return MutableKalmanSettings
@@ -183,7 +183,7 @@ function MutableKalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::Spars
     # Compute default value for missing parameters
     n, T = size(Y);
     m = size(B, 2);
-    DQD = Symmetric(D*Q*D');
+    DQD = Symmetric(Array(D*Q*D'));
 
     # Return MutableKalmanSettings
     return MutableKalmanSettings(Y, B, R, C, D, Q, X0, P0, DQD, n, T, m, compute_loglik, store_history);
