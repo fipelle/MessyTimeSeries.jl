@@ -502,7 +502,7 @@ function companion_form(Ψ::AbstractArray{Float64,2}; extended::Bool=false)
     total_rows = standard_rows + extra_rows;
 
     # Return companion matrix
-    companion = [Ψ zeros(n, extra_rows); Matrix(I, total_rows, total_rows) zeros(total_rows, n)]::FloatMatrix;
+    companion = [Ψ zeros(n, extra_rows); Matrix(1.0I, total_rows, total_rows) zeros(total_rows, n)]::FloatMatrix;
     return companion;
 end
 
