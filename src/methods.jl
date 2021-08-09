@@ -210,7 +210,7 @@ isconverged(new::Float64, old::Float64, tol::Float64, ε::Float64, increasing::B
 
 Soft thresholding operator.
 """
-soft_thresholding(z::Float64, ζ::Float64) = sign(z)*max(abs(z)-ζ, 0);
+soft_thresholding(z::Float64, ζ::Float64) = sign(z)*max(abs(z)-ζ, 0.0);
 
 """
     square_vandermonde_matrix(λ::FloatVector)
