@@ -166,7 +166,7 @@ function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_mi
     status.P_post = copy(status.P_prior);
     status.e = zeros(1);
     status.inv_F = Symmetric(zeros(1,1));
-    status.L = Matrix(I, settings.m, settings.m) |> FloatMatrix;
+    status.L = Matrix(1.0I, settings.m, settings.m);
 end
 
 """

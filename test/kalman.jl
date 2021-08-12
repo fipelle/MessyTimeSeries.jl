@@ -39,7 +39,7 @@ function kalman_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D:
 
             # Tests on KalmanSettings (min. number of arguments for ksettings_type)
             if test_family_id == 1
-                D_I = Matrix(I, benchmark_m, benchmark_m) |> FloatMatrix;
+                D_I = Matrix(1.0I, benchmark_m, benchmark_m);
                 test_family_input = (Y, B, R, C, benchmark_DQD);
                 test_family_benchmark = (Y, B, R, C, D_I, benchmark_DQD, benchmark_X0, benchmark_P0, benchmark_DQD, benchmark_n, benchmark_T, benchmark_m);
 
