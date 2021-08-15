@@ -19,12 +19,12 @@ apriori(X::FloatVector, settings::KalmanSettings) = settings.C * X;
 apriori(P::SymMatrix, settings::KalmanSettings) = Symmetric(settings.C * P * settings.C' + settings.DQD)::SymMatrix;
 
 """
-    apriori!(::Type{Nothing}, settings::KalmanSettings, status::KalmanStatus)
+    apriori!(old_X_prior::Nothing, settings::KalmanSettings, status::KalmanStatus)
 
 Kalman filter a-priori prediction for t==1.
 
 # Arguments
-- `::Type{Nothing}`: first prediction
+- `old_X_prior`: latest prediction (i.e., `nothing` for the first point in time)
 - `settings`: KalmanSettings struct
 - `status`: KalmanStatus struct
 
@@ -33,11 +33,11 @@ Kalman filter a-priori prediction for t==1.
 Kalman filter a-priori prediction.
 
 # Arguments
-- `::Type{FloatVector}`: standard prediction
+- `old_X_prior`: latest prediction
 - `settings`: KalmanSettings struct
 - `status`: KalmanStatus struct
 """
-function apriori!(::Type{Nothing}, settings::KalmanSettings, status::KalmanStatus)
+function apriori!(old_X_prior::Nothing, settings::KalmanSettings, status::KalmanStatus)
 
     status.X_prior = apriori(settings.X0, settings);
     status.P_prior = apriori(settings.P0, settings);
@@ -57,10 +57,17 @@ function apriori!(::Type{Nothing}, settings::KalmanSettings, status::KalmanStatu
     end
 end
 
-function apriori!(::Type{FloatVector}, settings::KalmanSettings, status::KalmanStatus)
+function apriori!(old_X_prior::FloatVector, settings::KalmanSettings, status::KalmanStatus)
     status.X_prior = apriori(status.X_post, settings);
     status.P_prior = apriori(status.P_post, settings);
 end
+
+"""
+    call_apriori!(settings::KalmanSettings, status::KalmanStatus)
+
+API to call `apriori!`.
+"""
+call_apriori!(settings::KalmanSettings, status::KalmanStatus) = apriori!(status.X_prior, settings, status);
 
 """
     find_observed_data(settings::KalmanSettings, status::KalmanStatus)
@@ -184,7 +191,7 @@ function kfilter!(settings::KalmanSettings, status::KalmanStatus)
     status.t += 1;
 
     # A-priori prediction
-    apriori!(typeof(status.X_prior), settings, status);
+    call_apriori!(settings, status);
 
     # Handle missing observations
     ind_not_missings = find_observed_data(settings, status);
