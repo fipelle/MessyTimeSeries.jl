@@ -188,7 +188,7 @@ Subsampling: Bootstrap
 =#
 
 """
-    moving_block_bootstrap(Y::Union{FloatMatrix, JMatrix{Float64}}, subsample::Float64, samples::Int64)
+    moving_block_bootstrap(Y::Union{FloatMatrix, JMatrix{Float64}}, subsample::Float64, samples::Int64, seed::Int64=1)
 
 Generate moving block bootstrap samples.
 
@@ -198,11 +198,12 @@ The moving block bootstrap randomly subsamples a time series into ordered and ov
 - `Y`: Observed measurements (`nxT`), where `n` and `T` are the number of series and observations.
 - `subsample`: Block size as a percentage of number of observed periods. It is bounded between 0 and 1.
 - `samples`: Number of bootstrap samples.
+- `seed`: Random seed (default: 1).
 
 # References
 Kunsch (1989) and Liu and Singh (1992).
 """
-function moving_block_bootstrap(Y::Union{FloatMatrix, JMatrix{Float64}}, subsample::Float64, samples::Int64)
+function moving_block_bootstrap(Y::Union{FloatMatrix, JMatrix{Float64}}, subsample::Float64, samples::Int64, seed::Int64=1)
 
     # Check inputs
     check_bounds(subsample, 0, 1);
@@ -219,11 +220,14 @@ function moving_block_bootstrap(Y::Union{FloatMatrix, JMatrix{Float64}}, subsamp
     # Initialise bootstrap_data
     bootstrap_data = JArray{Float64,3}(undef, n, block_size, samples);
 
+    # Set `rng`
+    rng = StableRNG(seed);
+
     # Loop over j=1, ..., samples
     for j=1:samples
 
         # Starting point for the moving block
-        ind_j = rand(1:T-block_size+1);
+        ind_j = rand(rng, 1:T-block_size+1);
 
         # Bootstrap data
         bootstrap_data[:, :, j] .= Y[:, ind_j:ind_j+block_size-1];
@@ -250,11 +254,12 @@ Note: Block size is exponentially distributed with mean `Int64(ceil(subsample*T)
 - `Y`: Observed measurements (`nxT`), where `n` and `T` are the number of series and observations.
 - `subsample`: Block size as a percentage of number of observed periods. It is bounded between 0 and 1.
 - `samples`: Number of bootstrap samples.
+- `seed`: Random seed (default: 1).
 
 # References
 Politis and Romano (1994).
 """
-function stationary_block_bootstrap(Y::Union{FloatMatrix, JMatrix{Float64}}, subsample::Float64, samples::Int64)
+function stationary_block_bootstrap(Y::Union{FloatMatrix, JMatrix{Float64}}, subsample::Float64, samples::Int64, seed::Int64=1)
 
     # Check inputs
     check_bounds(subsample, 0, 1);
@@ -271,19 +276,22 @@ function stationary_block_bootstrap(Y::Union{FloatMatrix, JMatrix{Float64}}, sub
     # Initialise bootstrap_data
     bootstrap_data = JArray{Float64,3}(undef, n, T, samples);
 
+    # Set `rng`
+    rng = StableRNG(seed);
+
     # Loop over j=1, ..., samples
     for j=1:samples
 
         # Merge multiple blocks of random size
         ind_j    = zeros(T) |> Array{Int64,1};
-        ind_j[1] = rand(1:T);
+        ind_j[1] = rand(rng, 1:T);
 
         # Loop over t=2,...,T
         for t=2:T
 
             # Let ind_j[t] be picked at random
-            if rand() < 1/avg_block_size;
-                ind_j[t] = rand(1:T);
+            if rand(rng) < 1/avg_block_size;
+                ind_j[t] = rand(rng, 1:T);
 
             # Let ind_j[t] be ind_j[t-1] + 1
             else

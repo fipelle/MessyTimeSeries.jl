@@ -540,20 +540,10 @@ In the sampling process, no more than n-1 elements are removed for each point in
 # Examples
 ```jldoctest
 julia> rand_without_replacement(StableRNG(1), 20, 5)
-15-element Array{Int64,1}:
+5-element Array{Int64,1}:
   1
-  2
-  3
-  5
-  7
-  8
- 10
- 11
- 13
+  9
  14
- 16
- 17
- 18
  19
  20
 ```
