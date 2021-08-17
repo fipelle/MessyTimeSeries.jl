@@ -12,8 +12,7 @@ function subsampling_test(folder_name::String, subsampling_method::Function, arg
     Y_copy = deepcopy(Y);
     args_copy = deepcopy(args);
 
-    # Run `subsampling_method` with fixed random seed
-    Random.seed!(1);
+    # Run `subsampling_method` with default random seed
     output = subsampling_method(Y, args...);
 
     # Load benchmark output
