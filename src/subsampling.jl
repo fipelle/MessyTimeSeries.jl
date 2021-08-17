@@ -238,7 +238,7 @@ function moving_block_bootstrap(Y::Union{FloatMatrix, JMatrix{Float64}}, subsamp
 end
 
 """
-    stationary_block_bootstrap(Y::Union{FloatMatrix, JMatrix{Float64}}, subsample::Float64, samples::Int64)
+    stationary_block_bootstrap(Y::Union{FloatMatrix, JMatrix{Float64}}, subsample::Float64, samples::Int64, seed::Int64=1)
 
 Generate stationary block bootstrap samples.
 
