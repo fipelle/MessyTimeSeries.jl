@@ -93,7 +93,7 @@ function objfun_optimal_d(n::Int64, T::Int64, d::Int64)
 end
 
 """
-    artificial_jackknife(Y::Union{FloatMatrix, JMatrix{Float64}}, subsample::Float64, max_samples::Int64)
+    artificial_jackknife(Y::Union{FloatMatrix, JMatrix{Float64}}, subsample::Float64, max_samples::Int64, seed::Int64=1)
 
 Generate artificial jackknife samples as in Pellegrino (2020).
 
@@ -105,11 +105,12 @@ The artificial delete-d jackknife is an extension of the delete-d jackknife for 
 - `Y`: Observed measurements (`nxT`), where `n` and `T` are the number of series and observations.
 - `subsample`: `d` as a percentage of the original sample size. It is bounded between 0 and 1.
 - `max_samples`: If `C(n*T,d)` is large, artificial_jackknife would generate `max_samples` jackknife samples.
+- `seed`: Random seed (default: 1).
 
 # References
 Pellegrino (2020).
 """
-function artificial_jackknife(Y::Union{FloatMatrix, JMatrix{Float64}}, subsample::Float64, max_samples::Int64)
+function artificial_jackknife(Y::Union{FloatMatrix, JMatrix{Float64}}, subsample::Float64, max_samples::Int64, seed::Int64=1)
 
     # Dimensions
     n, T = size(Y);
@@ -143,24 +144,27 @@ function artificial_jackknife(Y::Union{FloatMatrix, JMatrix{Float64}}, subsample
     ind_missings = Array{Int64}(zeros(d, samples));
     jackknife_data = JArray{Float64,3}(undef, n, T, samples);
 
+    # Set `rng`
+    rng = StableRNG(seed);
+
     # Loop over j=1, ..., samples
     for j=1:samples
 
         # First draw
         if j == 1
             if samples == C_nT_d
-                ind_missings[:,j] = rand_without_replacement(nT, d);
+                ind_missings[:,j] = rand_without_replacement(rng, nT, d);
             else
-                ind_missings[:,j] = rand_without_replacement(n, T, d);
+                ind_missings[:,j] = rand_without_replacement(rng, n, T, d);
             end
 
         # Iterates until ind_missings[:,j] is neither a vector of zeros, nor already included in ind_missings
         else
             while ind_missings[:,j] == zeros_vec || is_vector_in_matrix(ind_missings[:,j], ind_missings[:, 1:j-1])
                 if samples == C_nT_d
-                    ind_missings[:,j] = rand_without_replacement(nT, d);
+                    ind_missings[:,j] = rand_without_replacement(rng, nT, d);
                 else
-                    ind_missings[:,j] = rand_without_replacement(n, T, d);
+                    ind_missings[:,j] = rand_without_replacement(rng, n, T, d);
                 end
             end
         end

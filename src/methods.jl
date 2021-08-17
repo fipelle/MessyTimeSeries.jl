@@ -526,12 +526,12 @@ julia> no_combinations(1000000,100000)
 no_combinations(n::Int64, k::Int64) = factorial(big(n))/(factorial(big(k))*factorial(big(n-k)));
 
 """
-    rand_without_replacement(nT::Int64, d::Int64)
+    rand_without_replacement(rng::StableRNGs.LehmerRNG, nT::Int64, d::Int64)
 
 Draw `length(P)-d` elements from the positional vector `P` without replacement.
 `P` is permanently changed in the process.
 
-rand_without_replacement(n::Int64, T::Int64, d::Int64)
+rand_without_replacement(rng::StableRNGs.LehmerRNG, n::Int64, T::Int64, d::Int64)
 
 Draw `length(P)-d` elements from the positional vector `P` without replacement.
 In the sampling process, no more than n-1 elements are removed for each point in time.
@@ -539,7 +539,7 @@ In the sampling process, no more than n-1 elements are removed for each point in
 
 # Examples
 ```jldoctest
-julia> rand_without_replacement(20, 5)
+julia> rand_without_replacement(StableRNG(1), 20, 5)
 15-element Array{Int64,1}:
   1
   2
@@ -558,21 +558,21 @@ julia> rand_without_replacement(20, 5)
  20
 ```
 """
-function rand_without_replacement(nT::Int64, d::Int64)
+function rand_without_replacement(rng::StableRNGs.LehmerRNG, nT::Int64, d::Int64)
 
     # Positional vector
     P = collect(1:nT);
 
     # Draw without replacement d times
     for i=1:d
-        deleteat!(P, findall(P.==rand(P)));
+        deleteat!(P, findall(P.==rand(rng, P)));
     end
 
     # Return output
     return setdiff(1:nT, P);
 end
 
-function rand_without_replacement(n::Int64, T::Int64, d::Int64)
+function rand_without_replacement(rng::StableRNGs.LehmerRNG, n::Int64, T::Int64, d::Int64)
 
     # Positional vector
     P = collect(1:n*T);
@@ -589,7 +589,7 @@ function rand_without_replacement(n::Int64, T::Int64, d::Int64)
         while true
 
             # New candidate draw
-            draw = rand(P);
+            draw = rand(rng, P);
             coord_draw = @view coord[draw, :];
 
             # Accept the draw if all observations are not missing for time t = coord[draw, :][2]
