@@ -24,7 +24,7 @@ apriori(P::SymMatrix, settings::KalmanSettings) = Symmetric(settings.C * P * set
 Kalman filter a-priori prediction for t==1.
 
 # Arguments
-- `old_X_prior`: latest prediction (i.e., `nothing` for the first point in time)
+- `old_X_prior`: latest a-priori prediction (i.e., `nothing` for the first point in time)
 - `settings`: KalmanSettings struct
 - `status`: KalmanStatus struct
 
@@ -33,7 +33,7 @@ Kalman filter a-priori prediction for t==1.
 Kalman filter a-priori prediction.
 
 # Arguments
-- `old_X_prior`: latest prediction
+- `old_X_prior`: latest a-priori prediction
 - `settings`: KalmanSettings struct
 - `status`: KalmanStatus struct
 """
