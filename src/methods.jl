@@ -5,14 +5,6 @@ Base and generic math
 =#
 
 """
-    isnothing(::Any)
-
-True if the argument is ```nothing``` (false otherwise).
-"""
-isnothing(::Any) = false;
-isnothing(::Nothing) = true;
-
-"""
     verb_message(verb::Bool, message::String)
 
 @info `message` if `verb` is true.
