@@ -19,6 +19,37 @@ apriori(X::FloatVector, settings::KalmanSettings) = settings.C * X;
 apriori(P::SymMatrix, settings::KalmanSettings) = Symmetric(settings.C * P * settings.C' + settings.DQD)::SymMatrix;
 
 """
+    initialise_status_history!(settings::KalmanSettings, status::OnlineKalmanStatus)
+    initialise_status_history!(settings::KalmanSettings, status::DynamicKalmanStatus)
+    initialise_status_history!(settings::KalmanSettings, status::SizedKalmanStatus)
+
+Initialise the `status.history_*` arrays when needed.
+"""
+function initialise_status_history!(settings::KalmanSettings, status::OnlineKalmanStatus)
+    if settings.store_history == true
+        error("History must not be stored with an `OnlineKalmanStatus` struct. Try with an `DynamicKalmanStatus` or `SizedKalmanStatus` struct.")
+    end
+end
+
+function initialise_status_history!(settings::KalmanSettings, status::DynamicKalmanStatus)
+    if settings.store_history == true
+        status.history_X_prior = Array{FloatVector,1}();
+        status.history_X_post = Array{FloatVector,1}();
+        status.history_P_prior = Array{SymMatrix,1}();
+        status.history_P_post = Array{SymMatrix,1}();
+        status.history_e = Array{FloatVector,1}();
+        status.history_inv_F = Array{SymMatrix,1}();
+        status.history_L = Array{FloatMatrix,1}();
+    end
+end
+
+function initialise_status_history!(settings::KalmanSettings, status::SizedKalmanStatus)
+    if settings.store_history == false
+        error("History must be stored with a `SizedKalmanStatus` struct. Try with an `OnlineKalmanStatus` or `DynamicKalmanStatus` struct.")
+    end
+end
+
+"""
     apriori!(old_X_prior::Nothing, settings::KalmanSettings, status::KalmanStatus)
 
 Kalman filter a-priori prediction for t==1.
@@ -28,7 +59,7 @@ Kalman filter a-priori prediction for t==1.
 - `settings`: KalmanSettings struct
 - `status`: KalmanStatus struct
 
-    apriori!(::Type{FloatVector}, settings::KalmanSettings, status::KalmanStatus)
+    apriori!(old_X_prior::FloatVector, settings::KalmanSettings, status::KalmanStatus)
 
 Kalman filter a-priori prediction.
 
@@ -46,15 +77,7 @@ function apriori!(old_X_prior::Nothing, settings::KalmanSettings, status::Kalman
         status.loglik = 0.0;
     end
 
-    if settings.store_history == true
-        status.history_X_prior = Array{FloatVector,1}();
-        status.history_X_post = Array{FloatVector,1}();
-        status.history_P_prior = Array{SymMatrix,1}();
-        status.history_P_post = Array{SymMatrix,1}();
-        status.history_e = Array{FloatVector,1}();
-        status.history_inv_F = Array{SymMatrix,1}();
-        status.history_L = Array{FloatMatrix,1}();
-    end
+    initialise_status_history!(settings, status);
 end
 
 function apriori!(old_X_prior::FloatVector, settings::KalmanSettings, status::KalmanStatus)
@@ -177,6 +200,37 @@ function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_mi
 end
 
 """
+    update_status_history!(settings::KalmanSettings, status::OnlineKalmanStatus)
+    update_status_history!(settings::KalmanSettings, status::DynamicKalmanStatus)
+    update_status_history!(settings::KalmanSettings, status::SizedKalmanStatus)
+
+Update the `status.history_*` arrays with a new entry, when needed.
+"""
+update_status_history!(settings::KalmanSettings, status::OnlineKalmanStatus) = nothing;
+
+function update_status_history!(settings::KalmanSettings, status::DynamicKalmanStatus)
+    if settings.store_history == true
+        push!(status.history_X_prior, status.X_prior);
+        push!(status.history_X_post, status.X_post);
+        push!(status.history_P_prior, status.P_prior);
+        push!(status.history_P_post, status.P_post);
+        push!(status.history_e, status.e);
+        push!(status.history_inv_F, status.inv_F);
+        push!(status.history_L, status.L);
+    end
+end
+
+function update_status_history!(settings::KalmanSettings, status::SizedKalmanStatus)
+    status.history_X_prior[status.t] = status.X_prior;
+    status.history_X_post[status.t] = status.X_post;
+    status.history_P_prior[status.t] = status.P_prior;
+    status.history_P_post[status.t] = status.P_post;
+    status.history_e[status.t] = status.e;
+    status.history_inv_F[status.t] = status.inv_F;
+    status.history_L[status.t] = status.L;
+end
+
+"""
     kfilter!(settings::KalmanSettings, status::KalmanStatus)
 
 Kalman filter: a-priori prediction and a-posteriori update.
@@ -199,16 +253,8 @@ function kfilter!(settings::KalmanSettings, status::KalmanStatus)
     # Ex-post update
     aposteriori!(settings, status, ind_not_missings);
 
-    # Update history of *_prior and *_post
-    if settings.store_history == true
-        push!(status.history_X_prior, status.X_prior);
-        push!(status.history_X_post, status.X_post);
-        push!(status.history_P_prior, status.P_prior);
-        push!(status.history_P_post, status.P_post);
-        push!(status.history_e, status.e);
-        push!(status.history_inv_F, status.inv_F);
-        push!(status.history_L, status.L);
-    end
+    # Update `status.history_*`
+    update_status_history!(settings, status);
 end
 
 """
@@ -223,6 +269,17 @@ function kfilter_full_sample(sspace::KalmanSettings)
     end
 
     return status;
+end
+
+"""
+    kfilter_full_sample!(sspace::KalmanSettings, status::SizedKalmanStatus)
+
+Run Kalman filter from t=1 to `history_length` and update `status` in-place.
+"""
+function kfilter_full_sample!(sspace::KalmanSettings, status::SizedKalmanStatus)
+    for t=1:status.history_length
+        kfilter!(sspace, status);
+    end
 end
 
 """
