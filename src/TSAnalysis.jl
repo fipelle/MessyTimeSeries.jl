@@ -24,6 +24,6 @@ module TSAnalysis
             soft_thresholding, solve_discrete_lyapunov, isconverged, trimmed_mean, sum_skipmissing, mean_skipmissing, std_skipmissing, is_vector_in_matrix, demean, standardise, lag, companion_form;
 
     # Export functions
-    export kfilter!, kfilter_full_sample, kforecast, ksmoother, fmin_uc_models, arima, varima, forecast,
+    export kfilter!, kfilter_full_sample, kfilter_full_sample!, kforecast, ksmoother, fmin_uc_models, arima, varima, forecast,
            block_jackknife, optimal_d, artificial_jackknife, moving_block_bootstrap, stationary_block_bootstrap;
 end
