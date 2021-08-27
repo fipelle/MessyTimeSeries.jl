@@ -17,10 +17,8 @@ Kalman structures
 --------------------------------------------------------------------------------------------------------------------------------
 =#
 
-abstract type KalmanSettings end
-
 """
-    ImmutableKalmanSettings(...)
+    KalmanSettings(...)
 
 Define an immutable structure that includes all the Kalman filter and smoother inputs.
 
@@ -49,7 +47,7 @@ where ``e_{t} ~ N(0_{nx1}, R)`` and ``U_{t} ~ N(0_{mx1}, Q)``.
 - `compute_loglik`: Boolean (true for computing the loglikelihood in the Kalman filter)
 - `store_history`: Boolean (true to store the history of the filter and smoother)
 """
-struct ImmutableKalmanSettings <: KalmanSettings
+struct KalmanSettings
     Y::Union{FloatMatrix, JMatrix{Float64}}
     B::FloatMatrix
     R::SymMatrix
@@ -67,10 +65,10 @@ struct ImmutableKalmanSettings <: KalmanSettings
 end
 
 #=
-ImmutableKalmanSettings constructors
+KalmanSettings constructors
 =#
 
-function ImmutableKalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, Q::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
+function KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, Q::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
 
     # Compute default value for missing parameters
     n, T = size(Y);
@@ -79,11 +77,11 @@ function ImmutableKalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::Flo
     X0 = zeros(m);
     P0 = solve_discrete_lyapunov(C, Q);
 
-    # Return ImmutableKalmanSettings
-    return ImmutableKalmanSettings(Y, B, R, C, D, Q, X0, P0, Q, n, T, m, compute_loglik, store_history);
+    # Return KalmanSettings
+    return KalmanSettings(Y, B, R, C, D, Q, X0, P0, Q, n, T, m, compute_loglik, store_history);
 end
 
-function ImmutableKalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
+function KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
 
     # Compute default value for missing parameters
     n, T = size(Y);
@@ -92,84 +90,19 @@ function ImmutableKalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::Flo
     DQD = Symmetric(D*Q*D');
     P0 = solve_discrete_lyapunov(C, DQD);
 
-    # Return ImmutableKalmanSettings
-    return ImmutableKalmanSettings(Y, B, R, C, D, Q, X0, P0, DQD, n, T, m, compute_loglik, store_history);
+    # Return KalmanSettings
+    return KalmanSettings(Y, B, R, C, D, Q, X0, P0, DQD, n, T, m, compute_loglik, store_history);
 end
 
-function ImmutableKalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatVector, P0::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
+function KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatVector, P0::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
 
     # Compute default value for missing parameters
     n, T = size(Y);
     m = size(B, 2);
     DQD = Symmetric(D*Q*D');
 
-    # Return ImmutableKalmanSettings
-    return ImmutableKalmanSettings(Y, B, R, C, D, Q, X0, P0, DQD, n, T, m, compute_loglik, store_history);
-end
-
-"""
-    MutableKalmanSettings(...)
-
-Define a mutable structure identical in shape to ImmutableKalmanSettings.
-
-See the docstring of ImmutableKalmanSettings for more information.
-"""
-mutable struct MutableKalmanSettings <: KalmanSettings
-    Y::Union{FloatMatrix, JMatrix{Float64}}
-    B::FloatMatrix
-    R::SymMatrix
-    C::FloatMatrix
-    D::FloatMatrix
-    Q::SymMatrix
-    X0::FloatVector
-    P0::SymMatrix
-    DQD::SymMatrix
-    n::Int64
-    T::Int64
-    m::Int64
-    compute_loglik::Bool
-    store_history::Bool
-end
-
-#=
-MutableKalmanSettings constructors
-=#
-
-function MutableKalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, Q::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
-
-    # Compute default value for missing parameters
-    n, T = size(Y);
-    m = size(B, 2);
-    D = Matrix(1.0I, m, m);
-    X0 = zeros(m);
-    P0 = solve_discrete_lyapunov(C, Q);
-
-    # Return MutableKalmanSettings
-    return MutableKalmanSettings(Y, B, R, C, D, Q, X0, P0, Q, n, T, m, compute_loglik, store_history);
-end
-
-function MutableKalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
-
-    # Compute default value for missing parameters
-    n, T = size(Y);
-    m = size(B, 2);
-    X0 = zeros(m);
-    DQD = Symmetric(D*Q*D');
-    P0 = solve_discrete_lyapunov(C, DQD);
-
-    # Return MutableKalmanSettings
-    return MutableKalmanSettings(Y, B, R, C, D, Q, X0, P0, DQD, n, T, m, compute_loglik, store_history);
-end
-
-function MutableKalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatVector, P0::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
-
-    # Compute default value for missing parameters
-    n, T = size(Y);
-    m = size(B, 2);
-    DQD = Symmetric(D*Q*D');
-
-    # Return MutableKalmanSettings
-    return MutableKalmanSettings(Y, B, R, C, D, Q, X0, P0, DQD, n, T, m, compute_loglik, store_history);
+    # Return KalmanSettings
+    return KalmanSettings(Y, B, R, C, D, Q, X0, P0, DQD, n, T, m, compute_loglik, store_history);
 end
 
 abstract type KalmanStatus end
