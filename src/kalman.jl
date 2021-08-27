@@ -262,8 +262,7 @@ end
 
 Run Kalman filter from t=1 to T.
 """
-function kfilter_full_sample(sspace::KalmanSettings)
-    status = KalmanStatus();
+function kfilter_full_sample(sspace::KalmanSettings, status::KalmanStatus=DynamicKalmanStatus())
     for t=1:sspace.T
         kfilter!(sspace, status);
     end
@@ -277,6 +276,7 @@ end
 Run Kalman filter from t=1 to `history_length` and update `status` in-place.
 """
 function kfilter_full_sample!(sspace::KalmanSettings, status::SizedKalmanStatus)
+    status.t = 0;
     for t=1:status.history_length
         kfilter!(sspace, status);
     end
