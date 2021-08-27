@@ -258,6 +258,16 @@ function kfilter!(settings::KalmanSettings, status::KalmanStatus)
 end
 
 """
+    reset_kalman_status!(status::KalmanStatus)
+
+Reset essential entries in `status` to their original state (i.e., when t==0)
+"""
+function reset_kalman_status!(status::KalmanStatus)
+    status.t = 0;
+    status.X_prior = nothing;
+end
+
+"""
     kfilter_full_sample(sspace::KalmanSettings)
 
 Run Kalman filter from t=1 to T.
@@ -276,7 +286,7 @@ end
 Run Kalman filter from t=1 to `history_length` and update `status` in-place.
 """
 function kfilter_full_sample!(sspace::KalmanSettings, status::SizedKalmanStatus)
-    status.t = 0;
+    reset_kalman_status!(status);
     for t=1:status.history_length
         kfilter!(sspace, status);
     end
