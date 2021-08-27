@@ -172,10 +172,47 @@ function MutableKalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::Float
     return MutableKalmanSettings(Y, B, R, C, D, Q, X0, P0, DQD, n, T, m, compute_loglik, store_history);
 end
 
-"""
-    KalmanStatus(...)
+abstract type KalmanStatus end
 
-Define a mutable structure to manage the status of the Kalman filter and smoother.
+"""
+    OnlineKalmanStatus(...)
+
+Define a mutable structure to handle minimal Kalman filter output. 
+
+The Kalman filter history is not stored. This makes it ideal for online filtering problems. However, it is incompatible with the kalman smoother implementation.
+
+# Arguments
+- `t`: Current point in time
+- `loglik`: Loglikelihood
+- `X_prior`: Latest a-priori X
+- `X_post`: Latest a-posteriori X
+- `P_prior`: Latest a-priori P
+- `P_post`: Latest a-posteriori P
+- `e`: Forecast error
+- `inv_F`: Inverse of the forecast error covariance
+- `L`: Convenient shortcut for the filter and smoother
+"""
+mutable struct OnlineKalmanStatus <: KalmanStatus
+    t::Int64
+    loglik::Union{Float64, Nothing}
+    X_prior::Union{FloatVector, Nothing}
+    X_post::Union{FloatVector, Nothing}
+    P_prior::Union{SymMatrix, Nothing}
+    P_post::Union{SymMatrix, Nothing}
+    e::Union{FloatVector, Nothing}
+    inv_F::Union{SymMatrix, Nothing}
+    L::Union{FloatMatrix, Nothing}
+end
+
+# OnlineKalmanStatus constructor
+OnlineKalmanStatus() = OnlineKalmanStatus(0, [nothing for i=1:8]...);
+
+"""
+    DynamicKalmanStatus(...)
+
+Define a mutable structure to handle any type of Kalman filter output.
+
+The Kalman filter history is stored when `store_history` is set to true in the filter settings.
 
 # Arguments
 - `t`: Current point in time
@@ -195,7 +232,7 @@ Define a mutable structure to manage the status of the Kalman filter and smoothe
 - `history_inv_F`: History of the inverse of the forecast error covariance
 - `history_L`: History of the shortcut L
 """
-mutable struct KalmanStatus
+mutable struct DynamicKalmanStatus <: KalmanStatus
     t::Int64
     loglik::Union{Float64, Nothing}
     X_prior::Union{FloatVector, Nothing}
@@ -214,9 +251,63 @@ mutable struct KalmanStatus
     history_L::Union{Array{FloatMatrix,1}, Nothing}
 end
 
-# KalmanStatus constructors
-KalmanStatus() = KalmanStatus(0, [nothing for i=1:15]...);
+# DynamicKalmanStatus constructor
+DynamicKalmanStatus() = DynamicKalmanStatus(0, [nothing for i=1:15]...);
 
+"""
+    SizedKalmanStatus(...)
+
+Define a mutable structure that always store the filter history up to time T.
+
+# Arguments
+- `t`: Current point in time
+- `loglik`: Loglikelihood
+- `X_prior`: Latest a-priori X
+- `X_post`: Latest a-posteriori X
+- `P_prior`: Latest a-priori P
+- `P_post`: Latest a-posteriori P
+- `e`: Forecast error
+- `inv_F`: Inverse of the forecast error covariance
+- `L`: Convenient shortcut for the filter and smoother
+- `history_X_prior`: History of a-priori X
+- `history_X_post`: History of a-posteriori X
+- `history_P_prior`: History of a-priori P
+- `history_P_post`: History of a-posteriori P
+- `history_e`: History of the forecast error
+- `history_inv_F`: History of the inverse of the forecast error covariance
+- `history_L`: History of the shortcut L
+"""
+mutable struct SizedKalmanStatus <: KalmanStatus
+    t::Int64
+    history_length::Int64
+    loglik::Union{Float64, Nothing}
+    X_prior::Union{FloatVector, Nothing}
+    X_post::Union{FloatVector, Nothing}
+    P_prior::Union{SymMatrix, Nothing}
+    P_post::Union{SymMatrix, Nothing}
+    e::Union{FloatVector, Nothing}
+    inv_F::Union{SymMatrix, Nothing}
+    L::Union{FloatMatrix, Nothing}
+    history_X_prior::Array{FloatVector,1}
+    history_X_post::Array{FloatVector,1}
+    history_P_prior::Array{SymMatrix,1}
+    history_P_post::Array{SymMatrix,1}
+    history_e::Array{FloatVector,1}
+    history_inv_F::Array{SymMatrix,1}
+    history_L::Array{FloatMatrix,1}
+end
+
+# SizedKalmanStatus constructor
+function SizedKalmanStatus(T::Int64)
+    history_X_prior = Array{FloatVector,1}(undef, T);
+    history_X_post = Array{FloatVector,1}(undef, T);
+    history_P_prior = Array{SymMatrix,1}(undef, T);
+    history_P_post = Array{SymMatrix,1}(undef, T);
+    history_e = Array{FloatVector,1}(undef, T);
+    history_inv_F = Array{SymMatrix,1}(undef, T);
+    history_L = Array{FloatMatrix,1}(undef, T);
+    return SizedKalmanStatus(0, T, [nothing for i=1:8]..., history_X_prior, history_X_post, history_P_prior, history_P_post, history_e, history_inv_F, history_L);
+end
 
 #=
 --------------------------------------------------------------------------------------------------------------------------------
