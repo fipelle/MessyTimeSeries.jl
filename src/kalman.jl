@@ -368,15 +368,15 @@ function update_smoothing_factors!(settings::KalmanSettings, ind_not_missings::I
     L_C = L'*settings.C';
 
     # Compute J1 and J2
-    J1 .= B_inv_F*e + L_C*J1;
-    J2 .= Symmetric(B_inv_F*B_t + L_C*J2*L_C');
+    copyto!(J1, B_inv_F*e + L_C*J1);
+    copyto!(J2, Symmetric(B_inv_F*B_t + L_C*J2*L_C'));
 end
 
 update_smoothing_factors!(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::SymMatrix, L::FloatMatrix) = update_smoothing_factors!(settings, ind_not_missings, J1, J2);
 
 function update_smoothing_factors!(settings::KalmanSettings, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix)
-    J1 .= settings.C'*J1;
-    J2 .= Symmetric(settings.C'*J2*settings.C);
+    copyto!(J1, settings.C'*J1);
+    copyto!(J2, Symmetric(settings.C'*J2*settings.C));
 end
 
 """
