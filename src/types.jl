@@ -18,6 +18,22 @@ Kalman structures
 =#
 
 """
+    MSeries(...)
+
+Convenient mutable struct used in KalmanSettings for describing the data in a dynamic fashion.
+
+# Arguments
+- `data`: Observed measurements (`nxT`)
+- `n`: Number of series
+- `T`: Number of observations
+"""
+mutable struct MSeries
+    data::Union{FloatMatrix, JMatrix{Float64}}
+    n::Int64
+    T::Int64
+end
+
+"""
     KalmanSettings(...)
 
 Define an immutable structure that includes all the Kalman filter and smoother inputs.
@@ -41,14 +57,12 @@ where ``e_{t} ~ N(0_{nx1}, R)`` and ``U_{t} ~ N(0_{mx1}, Q)``.
 - `X0`: Mean vector for the states at time t=0
 - `P0`: Covariance matrix for the states at time t=0
 - `DQD`: Covariance matrix of D*U_{t} (i.e., D*Q*D')
-- `n`: Number of series
-- `T`: Number of observations
 - `m`: Number of latent states
 - `compute_loglik`: Boolean (true for computing the loglikelihood in the Kalman filter)
 - `store_history`: Boolean (true to store the history of the filter and smoother)
 """
 struct KalmanSettings
-    Y::Union{FloatMatrix, JMatrix{Float64}}
+    Y::MSeries
     B::FloatMatrix
     R::SymMatrix
     C::FloatMatrix
@@ -57,8 +71,6 @@ struct KalmanSettings
     X0::FloatVector
     P0::SymMatrix
     DQD::SymMatrix
-    n::Int64
-    T::Int64
     m::Int64
     compute_loglik::Bool
     store_history::Bool
@@ -78,7 +90,7 @@ function KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix,
     P0 = solve_discrete_lyapunov(C, Q);
 
     # Return KalmanSettings
-    return KalmanSettings(Y, B, R, C, D, Q, X0, P0, Q, n, T, m, compute_loglik, store_history);
+    return KalmanSettings(MSeries(Y, n, T), B, R, C, D, Q, X0, P0, Q, m, compute_loglik, store_history);
 end
 
 function KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
@@ -91,7 +103,7 @@ function KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix,
     P0 = solve_discrete_lyapunov(C, DQD);
 
     # Return KalmanSettings
-    return KalmanSettings(Y, B, R, C, D, Q, X0, P0, DQD, n, T, m, compute_loglik, store_history);
+    return KalmanSettings(MSeries(Y, n, T), B, R, C, D, Q, X0, P0, DQD, m, compute_loglik, store_history);
 end
 
 function KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatVector, P0::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
@@ -102,7 +114,7 @@ function KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix,
     DQD = Symmetric(D*Q*D');
 
     # Return KalmanSettings
-    return KalmanSettings(Y, B, R, C, D, Q, X0, P0, DQD, n, T, m, compute_loglik, store_history);
+    return KalmanSettings(MSeries(Y, n, T), B, R, C, D, Q, X0, P0, DQD, m, compute_loglik, store_history);
 end
 
 abstract type KalmanStatus end

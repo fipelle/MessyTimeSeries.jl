@@ -4,7 +4,7 @@
 Return true if the entries of ksettings are correct (false otherwise).
 """
 function ksettings_input_test(ksettings::KalmanSettings, Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatArray, P0::SymMatrix, DQD::SymMatrix, n::Int64, T::Int64, m::Int64; compute_loglik::Bool=true, store_history::Bool=true)
-    return ~(false in [ksettings.Y === Y;
+    return ~(false in [ksettings.Y.data === Y;
                       ksettings.B == B;
                       ksettings.R == R;
                       ksettings.C == C;
@@ -13,8 +13,8 @@ function ksettings_input_test(ksettings::KalmanSettings, Y::JArray, B::FloatMatr
                       ksettings.X0 == X0;
                       round.(ksettings.P0, digits=10) == P0;
                       ksettings.DQD == DQD;
-                      ksettings.n == n;
-                      ksettings.T == T;
+                      ksettings.Y.n == n;
+                      ksettings.Y.T == T;
                       ksettings.m == m;
                       ksettings.compute_loglik == compute_loglik;
                       ksettings.store_history == store_history]);

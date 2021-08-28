@@ -110,8 +110,8 @@ Return position of the observed measurements at time t.
 - `status`: KalmanStatus struct
 """
 function find_observed_data(settings::KalmanSettings, status::KalmanStatus)
-    if status.t <= settings.T
-        Y_t_all = @view settings.Y[:, status.t];
+    if status.t <= settings.Y.T
+        Y_t_all = @view settings.Y.data[:, status.t];
         ind_not_missings = findall(ismissing.(Y_t_all) .== false);
         if length(ind_not_missings) > 0
             return ind_not_missings;
@@ -120,8 +120,8 @@ function find_observed_data(settings::KalmanSettings, status::KalmanStatus)
 end
 
 function find_observed_data(settings::KalmanSettings, t::Int64)
-    if t <= settings.T
-        Y_t_all = @view settings.Y[:, t];
+    if t <= settings.Y.T
+        Y_t_all = @view settings.Y.data[:, t];
         ind_not_missings = findall(ismissing.(Y_t_all) .== false);
         if length(ind_not_missings) > 0
             return ind_not_missings;
@@ -164,7 +164,7 @@ Kalman filter a-posteriori update. All measurements are not observed at time t.
 """
 function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::IntVector)
 
-    Y_t = @view settings.Y[ind_not_missings, status.t];
+    Y_t = @view settings.Y.data[ind_not_missings, status.t];
     B_t = @view settings.B[ind_not_missings, :];
     R_t = @view settings.R[ind_not_missings, ind_not_missings];
 
