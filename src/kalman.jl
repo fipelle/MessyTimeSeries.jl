@@ -268,27 +268,27 @@ function reset_kalman_status!(status::KalmanStatus)
 end
 
 """
-    kfilter_full_sample(sspace::KalmanSettings)
+    kfilter_full_sample(settings::KalmanSettings)
 
 Run Kalman filter from t=1 to T.
 """
-function kfilter_full_sample(sspace::KalmanSettings, status::KalmanStatus=DynamicKalmanStatus())
-    for t=1:sspace.T
-        kfilter!(sspace, status);
+function kfilter_full_sample(settings::KalmanSettings, status::KalmanStatus=DynamicKalmanStatus())
+    for t=1:settings.Y.T
+        kfilter!(settings, status);
     end
 
     return status;
 end
 
 """
-    kfilter_full_sample!(sspace::KalmanSettings, status::SizedKalmanStatus)
+    kfilter_full_sample!(settings::KalmanSettings, status::SizedKalmanStatus)
 
 Run Kalman filter from t=1 to `history_length` and update `status` in-place.
 """
-function kfilter_full_sample!(sspace::KalmanSettings, status::SizedKalmanStatus)
+function kfilter_full_sample!(settings::KalmanSettings, status::SizedKalmanStatus)
     reset_kalman_status!(status);
     for t=1:status.history_length
-        kfilter!(sspace, status);
+        kfilter!(settings, status);
     end
 end
 
