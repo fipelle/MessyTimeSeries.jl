@@ -16,8 +16,7 @@ module TSAnalysis
 
     # Export types
     export IntVector, IntMatrix, IntArray, FloatVector, FloatMatrix, FloatArray, JVector, JMatrix, JArray, DiagMatrix, SymMatrix,
-           KalmanSettings, ImmutableKalmanSettings, MutableKalmanSettings, KalmanStatus, OnlineKalmanStatus, DynamicKalmanStatus, SizedKalmanStatus,
-           ARIMASettings, VARIMASettings;
+           KalmanSettings, KalmanStatus, OnlineKalmanStatus, DynamicKalmanStatus, SizedKalmanStatus, ARIMASettings, VARIMASettings;
 
     # Export methods
     export check_bounds, nan_to_missing!, error_info, verb_message, interpolate_series, forward_backwards_rw_interpolation, centred_moving_average,
