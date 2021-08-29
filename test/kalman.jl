@@ -21,6 +21,70 @@ function ksettings_input_test(ksettings::KalmanSettings, Y::JArray, B::FloatMatr
 end
 
 """
+    test_kalman_output(ksettings::KalmanSettings, kstatus::DynamicKalmanStatus, benchmark_data::Tuple)
+    test_kalman_output(ksettings::KalmanSettings, kstatus::SizedKalmanStatus, benchmark_data::Tuple)
+
+kalman_test internals.
+"""
+function test_kalman_output(ksettings::KalmanSettings, kstatus::DynamicKalmanStatus, benchmark_data::Tuple)
+
+    benchmark_n, benchmark_T, benchmark_m, benchmark_X0, benchmark_P0, benchmark_DQD, benchmark_X_prior, benchmark_P_prior, 
+        benchmark_X_post, benchmark_P_post, benchmark_X_fc, benchmark_P_fc, benchmark_loglik, benchmark_X0_sm, benchmark_P0_sm, 
+            benchmark_X_sm, benchmark_P_sm = benchmark_data;
+
+    for t=1:ksettings.Y.T
+
+        # Run filter
+        kfilter!(ksettings, kstatus);
+
+        # A-priori
+        @test round.(kstatus.X_prior, digits=10) == benchmark_X_prior[t];
+        @test round.(kstatus.P_prior, digits=10) == benchmark_P_prior[t];
+
+        # A-posteriori
+        @test round.(kstatus.X_post, digits=10) == benchmark_X_post[t];
+        @test round.(kstatus.P_post, digits=10) == benchmark_P_post[t];
+
+        # 12-step ahead forecast
+        @test round.(kforecast(ksettings, kstatus.X_post, 12)[end], digits=10) == benchmark_X_fc[t];
+        @test round.(kforecast(ksettings, kstatus.X_post, kstatus.P_post, 12)[1][end], digits=10) == benchmark_X_fc[t];
+        @test round.(kforecast(ksettings, kstatus.X_post, kstatus.P_post, 12)[2][end], digits=10) == benchmark_P_fc[t];
+    end
+
+    # Final value of the loglikelihood
+    @test round.(kstatus.loglik, digits=10) == benchmark_loglik;
+end
+
+function test_kalman_output(ksettings::KalmanSettings, kstatus::SizedKalmanStatus, benchmark_data::Tuple)
+
+    benchmark_n, benchmark_T, benchmark_m, benchmark_X0, benchmark_P0, benchmark_DQD, benchmark_X_prior, benchmark_P_prior, 
+        benchmark_X_post, benchmark_P_post, benchmark_X_fc, benchmark_P_fc, benchmark_loglik, benchmark_X0_sm, benchmark_P0_sm, 
+            benchmark_X_sm, benchmark_P_sm = benchmark_data;
+
+    for t=1:ksettings.Y.T
+
+        # Run filter
+        kfilter!(ksettings, kstatus);
+
+        # A-priori
+        @test round.(kstatus.online_status.X_prior, digits=10) == benchmark_X_prior[t];
+        @test round.(kstatus.online_status.P_prior, digits=10) == benchmark_P_prior[t];
+
+        # A-posteriori
+        @test round.(kstatus.online_status.X_post, digits=10) == benchmark_X_post[t];
+        @test round.(kstatus.online_status.P_post, digits=10) == benchmark_P_post[t];
+
+        # 12-step ahead forecast
+        @test round.(kforecast(ksettings, kstatus.online_status.X_post, 12)[end], digits=10) == benchmark_X_fc[t];
+        @test round.(kforecast(ksettings, kstatus.online_status.X_post, kstatus.online_status.P_post, 12)[1][end], digits=10) == benchmark_X_fc[t];
+        @test round.(kforecast(ksettings, kstatus.online_status.X_post, kstatus.online_status.P_post, 12)[2][end], digits=10) == benchmark_P_fc[t];
+    end
+
+    # Final value of the loglikelihood
+    @test round.(kstatus.online_status.loglik, digits=10) == benchmark_loglik;
+end
+
+"""
     kalman_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, benchmark_data::Tuple)
 
 Run a series of tests to check whether the kalman.jl functions work.
@@ -73,32 +137,12 @@ function kalman_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D:
         # Initialise kstatus
         for kstatus in [DynamicKalmanStatus(), SizedKalmanStatus(size(Y,2))]
 
-            for t=1:size(Y,2)
-
-                # Run filter
-                kfilter!(ksettings, kstatus);
-
-                # A-priori
-                @test round.(kstatus.X_prior, digits=10) == benchmark_X_prior[t];
-                @test round.(kstatus.P_prior, digits=10) == benchmark_P_prior[t];
-
-                # A-posteriori
-                @test round.(kstatus.X_post, digits=10) == benchmark_X_post[t];
-                @test round.(kstatus.P_post, digits=10) == benchmark_P_post[t];
-
-                # 12-step ahead forecast
-                @test round.(kforecast(ksettings, kstatus.X_post, 12)[end], digits=10) == benchmark_X_fc[t];
-                @test round.(kforecast(ksettings, kstatus.X_post, kstatus.P_post, 12)[1][end], digits=10) == benchmark_X_fc[t];
-                @test round.(kforecast(ksettings, kstatus.X_post, kstatus.P_post, 12)[2][end], digits=10) == benchmark_P_fc[t];
-            end
-
-            # Final value of the loglikelihood
-            @test round.(kstatus.loglik, digits=10) == benchmark_loglik;
+            test_kalman_output(ksettings, kstatus, benchmark_data);
 
             # Kalman smoother
             X_sm, P_sm, X0_sm, P0_sm = ksmoother(ksettings, kstatus);
 
-            for t=1:size(Y,2)
+            for t=1:ksettings.Y.T
                 @test round.(X_sm[t], digits=10) == benchmark_X_sm[t];
                 @test round.(P_sm[t], digits=10) == benchmark_P_sm[t];
             end
