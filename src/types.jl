@@ -202,18 +202,11 @@ DynamicKalmanStatus() = DynamicKalmanStatus(0, [nothing for i=1:15]...);
 """
     SizedKalmanStatus(...)
 
-Define a mutable structure that always store the filter history up to time T.
+Define an immutable structure that always store the filter history up to time T.
 
 # Arguments
-- `t`: Current point in time
-- `loglik`: Loglikelihood
-- `X_prior`: Latest a-priori X
-- `X_post`: Latest a-posteriori X
-- `P_prior`: Latest a-priori P
-- `P_post`: Latest a-posteriori P
-- `e`: Forecast error
-- `inv_F`: Inverse of the forecast error covariance
-- `L`: Convenient shortcut for the filter and smoother
+- `online_status`: `OnlineKalmanStatus` struct
+- `history_length`: History length
 - `history_X_prior`: History of a-priori X
 - `history_X_post`: History of a-posteriori X
 - `history_P_prior`: History of a-priori P
@@ -222,17 +215,9 @@ Define a mutable structure that always store the filter history up to time T.
 - `history_inv_F`: History of the inverse of the forecast error covariance
 - `history_L`: History of the shortcut L
 """
-mutable struct SizedKalmanStatus <: KalmanStatus
-    t::Int64
+struct SizedKalmanStatus <: KalmanStatus
+    online_status::OnlineKalmanStatus
     history_length::Int64
-    loglik::Union{Float64, Nothing}
-    X_prior::Union{FloatVector, Nothing}
-    X_post::Union{FloatVector, Nothing}
-    P_prior::Union{SymMatrix, Nothing}
-    P_post::Union{SymMatrix, Nothing}
-    e::Union{FloatVector, Nothing}
-    inv_F::Union{SymMatrix, Nothing}
-    L::Union{FloatMatrix, Nothing}
     history_X_prior::Array{FloatVector,1}
     history_X_post::Array{FloatVector,1}
     history_P_prior::Array{SymMatrix,1}
@@ -251,7 +236,7 @@ function SizedKalmanStatus(T::Int64)
     history_e = Array{FloatVector,1}(undef, T);
     history_inv_F = Array{SymMatrix,1}(undef, T);
     history_L = Array{FloatMatrix,1}(undef, T);
-    return SizedKalmanStatus(0, T, [nothing for i=1:8]..., history_X_prior, history_X_post, history_P_prior, history_P_post, history_e, history_inv_F, history_L);
+    return SizedKalmanStatus(OnlineKalmanStatus(), T, history_X_prior, history_X_post, history_P_prior, history_P_post, history_e, history_inv_F, history_L);
 end
 
 #=

@@ -1,4 +1,13 @@
 """
+    increase_time!(status::KalmanStatus)
+    increase_time!(status::SizedKalmanStatus)
+
+Increase time by one unit.
+"""
+increase_time!(status::KalmanStatus) = status.t += 1;
+increase_time!(status::SizedKalmanStatus) = increase_time!(status.online_status);
+
+"""
     apriori(X::FloatVector, settings::KalmanSettings)
 
 Kalman filter a-priori prediction for X.
@@ -17,6 +26,21 @@ Kalman filter a-priori prediction for P.
 """
 apriori(X::FloatVector, settings::KalmanSettings) = settings.C * X;
 apriori(P::SymMatrix, settings::KalmanSettings) = Symmetric(settings.C * P * settings.C' + settings.DQD)::SymMatrix;
+
+"""
+    initialise_apriori!(settings::KalmanSettings, status::KalmanStatus)
+
+Initialise X_prior, P_prior and loglik.
+"""
+function initialise_apriori!(settings::KalmanSettings, status::KalmanStatus)
+
+    status.X_prior = apriori(settings.X0, settings);
+    status.P_prior = apriori(settings.P0, settings);
+
+    if settings.compute_loglik == true
+        status.loglik = 0.0;
+    end
+end
 
 """
     initialise_status_history!(settings::KalmanSettings, status::OnlineKalmanStatus)
@@ -51,6 +75,7 @@ end
 
 """
     apriori!(old_X_prior::Nothing, settings::KalmanSettings, status::KalmanStatus)
+    apriori!(old_X_prior::Nothing, settings::KalmanSettings, status::SizedKalmanStatus)
 
 Kalman filter a-priori prediction for t==1.
 
@@ -60,6 +85,7 @@ Kalman filter a-priori prediction for t==1.
 - `status`: KalmanStatus struct
 
     apriori!(old_X_prior::FloatVector, settings::KalmanSettings, status::KalmanStatus)
+    apriori!(old_X_prior::FloatVector, settings::KalmanSettings, status::SizedKalmanStatus)
 
 Kalman filter a-priori prediction.
 
@@ -69,14 +95,12 @@ Kalman filter a-priori prediction.
 - `status`: KalmanStatus struct
 """
 function apriori!(old_X_prior::Nothing, settings::KalmanSettings, status::KalmanStatus)
+    initialise_apriori!(settings, status);
+    initialise_status_history!(settings, status);
+end
 
-    status.X_prior = apriori(settings.X0, settings);
-    status.P_prior = apriori(settings.P0, settings);
-
-    if settings.compute_loglik == true
-        status.loglik = 0.0;
-    end
-
+function apriori!(old_X_prior::Nothing, settings::KalmanSettings, status::SizedKalmanStatus)
+    initialise_apriori!(settings, status.online_status);
     initialise_status_history!(settings, status);
 end
 
@@ -85,15 +109,20 @@ function apriori!(old_X_prior::FloatVector, settings::KalmanSettings, status::Ka
     status.P_prior = apriori(status.P_post, settings);
 end
 
+apriori!(old_X_prior::FloatVector, settings::KalmanSettings, status::SizedKalmanStatus) = apriori!(old_X_prior, settings, status.online_status);
+
 """
     call_apriori!(settings::KalmanSettings, status::KalmanStatus)
+    call_apriori!(settings::KalmanSettings, status::SizedKalmanStatus)
 
 API to call `apriori!`.
 """
 call_apriori!(settings::KalmanSettings, status::KalmanStatus) = apriori!(status.X_prior, settings, status);
+call_apriori!(settings::KalmanSettings, status::SizedKalmanStatus) = apriori!(status.online_status.X_prior, settings, status);
 
 """
     find_observed_data(settings::KalmanSettings, status::KalmanStatus)
+    find_observed_data(settings::KalmanSettings, status::SizedKalmanStatus)
 
 Return position of the observed measurements at time status.t.
 
@@ -119,6 +148,8 @@ function find_observed_data(settings::KalmanSettings, status::KalmanStatus)
     end
 end
 
+find_observed_data(settings::KalmanSettings, status::SizedKalmanStatus) = find_observed_data(settings, status.online_status);
+
 function find_observed_data(settings::KalmanSettings, t::Int64)
     if t <= settings.Y.T
         Y_t_all = @view settings.Y.data[:, t];
@@ -143,6 +174,7 @@ end
 
 """
     aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::IntVector)
+    aposteriori!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::IntVector)
 
 Kalman filter a-posteriori update. Measurements are observed (or partially observed) at time t.
 
@@ -154,6 +186,7 @@ The update for the covariance matrix is implemented by using the Joseph's stabil
 - `ind_not_missings`: Position of the observed measurements
 
     aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing)
+    aposteriori!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::Nothing)
 
 Kalman filter a-posteriori update. All measurements are not observed at time t.
 
@@ -191,6 +224,8 @@ function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_mi
     end
 end
 
+aposteriori!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::IntVector) = aposteriori!(settings, status.online_status, ind_not_missings);
+
 function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing)
     status.X_post = copy(status.X_prior);
     status.P_post = copy(status.P_prior);
@@ -198,6 +233,8 @@ function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_mi
     status.inv_F = Symmetric(zeros(1,1));
     status.L = Matrix(1.0I, settings.m, settings.m);
 end
+
+aposteriori!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::Nothing) = aposteriori!(settings, status.online_status, ind_not_missings);
 
 """
     update_status_history!(settings::KalmanSettings, status::OnlineKalmanStatus)
@@ -221,13 +258,13 @@ function update_status_history!(settings::KalmanSettings, status::DynamicKalmanS
 end
 
 function update_status_history!(settings::KalmanSettings, status::SizedKalmanStatus)
-    status.history_X_prior[status.t] = status.X_prior;
-    status.history_X_post[status.t] = status.X_post;
-    status.history_P_prior[status.t] = status.P_prior;
-    status.history_P_post[status.t] = status.P_post;
-    status.history_e[status.t] = status.e;
-    status.history_inv_F[status.t] = status.inv_F;
-    status.history_L[status.t] = status.L;
+    status.history_X_prior[status.online_status.t] = status.online_status.X_prior;
+    status.history_X_post[status.online_status.t] = status.online_status.X_post;
+    status.history_P_prior[status.online_status.t] = status.online_status.P_prior;
+    status.history_P_post[status.online_status.t] = status.online_status.P_post;
+    status.history_e[status.online_status.t] = status.online_status.e;
+    status.history_inv_F[status.online_status.t] = status.online_status.inv_F;
+    status.history_L[status.online_status.t] = status.online_status.L;
 end
 
 """
@@ -242,7 +279,7 @@ Kalman filter: a-priori prediction and a-posteriori update.
 function kfilter!(settings::KalmanSettings, status::KalmanStatus)
 
     # Update status.t
-    status.t += 1;
+    increase_time!(status);
 
     # A-priori prediction
     call_apriori!(settings, status);
@@ -286,7 +323,7 @@ end
 Run Kalman filter from t=1 to `history_length` and update `status` in-place.
 """
 function kfilter_full_sample!(settings::KalmanSettings, status::SizedKalmanStatus)
-    reset_kalman_status!(status);
+    reset_kalman_status!(status.online_status);
     for t=1:status.history_length
         kfilter!(settings, status);
     end
@@ -351,6 +388,15 @@ function kforecast(settings::KalmanSettings, Xt::Union{FloatVector, Nothing}, Pt
 end
 
 """
+    retrieve_status_t(status::KalmanStatus)
+    retrieve_status_t(status::SizedKalmanStatus)
+
+Retrieve last filtering point in time.
+"""
+retrieve_status_t(status::KalmanStatus) = status.t;
+retrieve_status_t(status::SizedKalmanStatus) = status.online_status.t;
+
+"""
     update_smoothing_factors!(settings::KalmanSettings, ind_not_missings::IntVector, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::SymMatrix, L::FloatMatrix)
 
 Update J1 and J2 with a-posteriori recursion.
@@ -411,8 +457,8 @@ function ksmoother(settings::KalmanSettings, status::KalmanStatus)
     J1 = zeros(settings.m);
     J2 = Symmetric(zeros(settings.m, settings.m));
 
-    # Loop over t (from status.t-1 to 1)
-    for t=status.t:-1:1
+    # Loop over t
+    for t=retrieve_status_t(status):-1:1
 
         # Pointers
         Xp = status.history_X_prior[t];

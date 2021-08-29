@@ -1,4 +1,6 @@
-using LinearAlgebra, Test, TSAnalysis;
+using LinearAlgebra, Test;#, TSAnalysis;
+include("../src/TSAnalysis.jl")
+using Main.TSAnalysis;
 
 """
     read_test_input(filepath::String)
