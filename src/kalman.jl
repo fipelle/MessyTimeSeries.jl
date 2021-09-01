@@ -161,6 +161,22 @@ function find_observed_data(settings::KalmanSettings, t::Int64)
 end
 
 """
+    update_P_post!(P_post_old::SymMatrix, status::KalmanStatus, K_t::FloatMatrix, R_t::SubArray{Float64})
+    update_P_post!(P_post_old::Nothing, status::KalmanStatus, K_t::FloatMatrix, R_t::SubArray{Float64})
+
+Update status.P_post.
+"""
+function update_P_post!(P_post_old::SymMatrix, status::KalmanStatus, K_t::FloatMatrix, R_t::SubArray{Float64})
+    mul!(status.P_post.data, status.L*status.P_prior, status.L');
+    mul!(status.P_post.data, K_t*R_t, K_t', 1.0, 1.0);
+end
+
+function update_P_post!(P_post_old::Nothing, status::KalmanStatus, K_t::FloatMatrix, R_t::SubArray{Float64})
+    status.P_post = Symmetric(status.L*status.P_prior*status.L');
+    mul!(status.P_post.data, K_t*R_t, K_t', 1.0, 1.0);
+end
+
+"""
     update_loglik!(status::KalmanStatus)
 
 Update status.loglik.
@@ -197,26 +213,33 @@ Kalman filter a-posteriori update. All measurements are not observed at time t.
 """
 function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::IntVector)
 
-    Y_t = @view settings.Y.data[ind_not_missings, status.t];
+    # Convenient views
     B_t = @view settings.B[ind_not_missings, :];
     R_t = @view settings.R[ind_not_missings, ind_not_missings];
 
     # Forecast error
-    status.e = Y_t - B_t*status.X_prior;
-    status.inv_F = inv(Symmetric(B_t*status.P_prior*B_t' + R_t))::SymMatrix;
+    status.e = settings.Y.data[ind_not_missings, status.t];
+    mul!(status.e, B_t, status.X_prior, -1.0, 1.0);
 
-    # Convenient shortcut for computing the Kalman gain and increasing stability of status.L and
-    shortcut_gain = B_t'*status.inv_F;
+    # Convenient shortcut for the forecast error covariance matrix and Kalman gain
+    shortcut = B_t*status.P_prior;
+
+    # Inverse of the forecast error covariance matrix
+    status.inv_F = inv(Symmetric(shortcut*B_t'+R_t))::SymMatrix;
 
     # Kalman gain
-    K_t = status.P_prior*shortcut_gain;
+    K_t = shortcut'*status.inv_F;
 
     # Convenient shortcut for the Joseph form and needed statistics for the Kalman smoother
-    status.L = I - status.P_prior*Symmetric(shortcut_gain*B_t);
+    status.L = Matrix(1.0I, settings.m, settings.m);
+    mul!(status.L, K_t, B_t, -1.0, 1.0);
 
-    # A posteriori estimates
-    status.X_post = status.X_prior + K_t*status.e;
-    status.P_post = Symmetric(status.L*status.P_prior*status.L' + K_t*R_t*K_t'); # Joseph form
+    # A posteriori estimates: X_post
+    status.X_post = copy(status.X_prior);
+    mul!(status.X_post, K_t, status.e, 1.0, 1.0);
+
+    # A posteriori estimates: P_post (P_post is updated using the Joseph form)
+    update_P_post!(status.P_post, status, K_t, R_t);
 
     # Update log likelihood
     if settings.compute_loglik == true
