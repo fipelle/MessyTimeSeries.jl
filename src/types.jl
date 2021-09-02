@@ -136,6 +136,7 @@ The Kalman filter history is not stored. This makes it ideal for online filterin
 - `e`: Forecast error
 - `inv_F`: Inverse of the forecast error covariance
 - `L`: Convenient shortcut for the filter and smoother
+- `buffer_J1`, `buffer_J2`, `buffer_m_m`, `buffer_m_n_obs`: Buffer arrays used for low-level matrix operations 
 """
 mutable struct OnlineKalmanStatus <: KalmanStatus
     t::Int64
@@ -147,10 +148,14 @@ mutable struct OnlineKalmanStatus <: KalmanStatus
     e::Union{FloatVector, Nothing}
     inv_F::Union{SymMatrix, Nothing}
     L::Union{FloatMatrix, Nothing}
+    buffer_J1::Union{FloatVector, Nothing}
+    buffer_J2::Union{FloatMatrix, Nothing}
+    buffer_m_m::Union{FloatMatrix, Nothing}
+    buffer_m_n_obs::Union{FloatMatrix, Nothing}
 end
 
 # OnlineKalmanStatus constructor
-OnlineKalmanStatus() = OnlineKalmanStatus(0, [nothing for i=1:8]...);
+OnlineKalmanStatus() = OnlineKalmanStatus(0, [nothing for i=1:12]...);
 
 """
     DynamicKalmanStatus(...)
@@ -169,6 +174,7 @@ The Kalman filter history is stored when `store_history` is set to true in the f
 - `e`: Forecast error
 - `inv_F`: Inverse of the forecast error covariance
 - `L`: Convenient shortcut for the filter and smoother
+- `buffer_J1`, `buffer_J2`, `buffer_m_m`, `buffer_m_n_obs`: Buffer arrays used for low-level matrix operations 
 - `history_X_prior`: History of a-priori X
 - `history_X_post`: History of a-posteriori X
 - `history_P_prior`: History of a-priori P
@@ -187,6 +193,10 @@ mutable struct DynamicKalmanStatus <: KalmanStatus
     e::Union{FloatVector, Nothing}
     inv_F::Union{SymMatrix, Nothing}
     L::Union{FloatMatrix, Nothing}
+    buffer_J1::Union{FloatVector, Nothing}
+    buffer_J2::Union{FloatMatrix, Nothing}
+    buffer_m_m::Union{FloatMatrix, Nothing}
+    buffer_m_n_obs::Union{FloatMatrix, Nothing}
     history_X_prior::Union{Array{FloatVector,1}, Nothing}
     history_X_post::Union{Array{FloatVector,1}, Nothing}
     history_P_prior::Union{Array{SymMatrix,1}, Nothing}
@@ -197,7 +207,7 @@ mutable struct DynamicKalmanStatus <: KalmanStatus
 end
 
 # DynamicKalmanStatus constructor
-DynamicKalmanStatus() = DynamicKalmanStatus(0, [nothing for i=1:15]...);
+DynamicKalmanStatus() = DynamicKalmanStatus(0, [nothing for i=1:19]...);
 
 """
     SizedKalmanStatus(...)
