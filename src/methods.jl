@@ -57,13 +57,13 @@ function trimmed_mean(X::AbstractArray{Float64,1}, α::Float64)
 end
 
 """
-    sum_skipmissing(X::AbstractArray{Float64,1})
-    sum_skipmissing(X::AbstractArray{Union{Missing, Float64},1})
+    sum_skipmissing(X::AbstractVector{Float64})
+    sum_skipmissing(X::AbstractVector{Union{Missing, Float64}})
 
 Compute the sum of the observed values in `X`.
 
-    sum_skipmissing(X::AbstractArray{Float64})
-    sum_skipmissing(X::AbstractArray{Union{Missing, Float64}})
+    sum_skipmissing(X::AbstractMatrix{Float64})
+    sum_skipmissing(X::AbstractMatrix{Union{Missing, Float64}})
 
 Compute the sum of the observed values in `X` column wise.
 
@@ -79,13 +79,13 @@ julia> sum_skipmissing([1.0 2.0; missing 3.0; 3.0 5.0])
  8.0
 ```
 """
-sum_skipmissing(X::AbstractArray{Float64,1}) = sum(X);
-sum_skipmissing(X::AbstractArray{Float64}) = sum(X, dims=2);
-sum_skipmissing(X::AbstractArray{Union{Missing, Float64},1}) = sum(skipmissing(X));
+sum_skipmissing(X::AbstractVector{Float64}) = sum(X);
+sum_skipmissing(X::AbstractMatrix{Float64}) = sum(X, dims=2);
+sum_skipmissing(X::AbstractVector{Union{Missing, Float64}}) = sum(skipmissing(X));
 
-function sum_skipmissing(X::AbstractArray{Union{Missing, Float64}})
+function sum_skipmissing(X::AbstractMatrix{Union{Missing, Float64}})
     n = size(X,1);
-    output = zeros(n);
+    output = zeros(n,1);
     for i=1:n
         Xi = @view X[i,:];
         output[i] = sum(skipmissing(Xi));
@@ -95,13 +95,13 @@ function sum_skipmissing(X::AbstractArray{Union{Missing, Float64}})
 end
 
 """
-    mean_skipmissing(X::AbstractArray{Float64,1})
-    mean_skipmissing(X::AbstractArray{Union{Missing, Float64},1})
+    mean_skipmissing(X::AbstractVector{Float64})
+    mean_skipmissing(X::AbstractVector{Union{Missing, Float64}})
 
 Compute the mean of the observed values in `X`.
 
-    mean_skipmissing(X::AbstractArray{Float64})
-    mean_skipmissing(X::AbstractArray{Union{Missing, Float64}})
+    mean_skipmissing(X::AbstractMatrix{Float64})
+    mean_skipmissing(X::AbstractMatrix{Union{Missing, Float64}})
 
 Compute the mean of the observed values in `X` column wise.
 
@@ -117,13 +117,13 @@ julia> mean_skipmissing([1.0 2.0; missing 3.0; 3.0 5.0])
  4.0
 ```
 """
-mean_skipmissing(X::AbstractArray{Float64,1}) = mean(X);
-mean_skipmissing(X::AbstractArray{Float64}) = mean(X, dims=2);
-mean_skipmissing(X::AbstractArray{Union{Missing, Float64},1}) = mean(skipmissing(X));
+mean_skipmissing(X::AbstractVector{Float64}) = mean(X);
+mean_skipmissing(X::AbstractMatrix{Float64}) = mean(X, dims=2);
+mean_skipmissing(X::AbstractVector{Union{Missing, Float64}}) = mean(skipmissing(X));
 
-function mean_skipmissing(X::AbstractArray{Union{Missing, Float64}})
+function mean_skipmissing(X::AbstractMatrix{Union{Missing, Float64}})
     n = size(X,1);
-    output = zeros(n);
+    output = zeros(n,1);
     for i=1:n
         Xi = @view X[i,:];
         output[i] = mean(skipmissing(Xi));
@@ -133,13 +133,13 @@ function mean_skipmissing(X::AbstractArray{Union{Missing, Float64}})
 end
 
 """
-    std_skipmissing(X::AbstractArray{Float64,1})
-    std_skipmissing(X::AbstractArray{Union{Missing, Float64},1})
+    std_skipmissing(X::AbstractVector{Float64})
+    std_skipmissing(X::AbstractVector{Union{Missing, Float64}})
 
 Compute the standard deviation of the observed values in `X`.
 
-    std_skipmissing(X::AbstractArray{Float64})
-    std_skipmissing(X::AbstractArray{Union{Missing, Float64}})
+    std_skipmissing(X::AbstractMatrix{Float64})
+    std_skipmissing(X::AbstractMatrix{Union{Missing, Float64}})
 
 Compute the standard deviation of the observed values in `X` column wise.
 
@@ -155,13 +155,13 @@ julia> std_skipmissing([1.0 2.0; missing 3.0; 3.0 5.0])
    1.4142135623730951
 ```
 """
-std_skipmissing(X::AbstractArray{Float64,1}) = std(X);
-std_skipmissing(X::AbstractArray{Float64}) = std(X, dims=2);
-std_skipmissing(X::AbstractArray{Union{Missing, Float64},1}) = std(skipmissing(X));
+std_skipmissing(X::AbstractVector{Float64}) = std(X);
+std_skipmissing(X::AbstractMatrix{Float64}) = std(X, dims=2);
+std_skipmissing(X::AbstractVector{Union{Missing, Float64}}) = std(skipmissing(X));
 
-function std_skipmissing(X::AbstractArray{Union{Missing, Float64}})
+function std_skipmissing(X::AbstractMatrix{Union{Missing, Float64}})
     n = size(X,1);
-    output = zeros(n);
+    output = zeros(n,1);
     for i=1:n
         Xi = @view X[i,:];
         output[i] = std(skipmissing(Xi));
