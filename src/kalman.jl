@@ -487,7 +487,7 @@ backwards_pass(Xp::FloatVector, Pp::SymMatrix, J1::FloatVector) = Xp + Pp*J1;
 backwards_pass(Pp::SymMatrix, J2::SymMatrix) = Symmetric(Pp - Pp*J2*Pp);
 
 """
-    ksmoother(settings::KalmanSettings, status::KalmanStatus)
+    ksmoother(settings::KalmanSettings, status::KalmanStatus, t_stop::Int64=1)
 
 Kalman smoother: RTS smoother from the last evaluated time period in status to t==0.
 
@@ -496,8 +496,9 @@ The smoother is implemented following the approach proposed in Durbin and Koopma
 # Arguments
 - `settings`: KalmanSettings struct
 - `status`: KalmanStatus struct
+- `t_stop`: Optional argument that can be used to define the last smoothing period (default: 1)
 """
-function ksmoother(settings::KalmanSettings, status::KalmanStatus)
+function ksmoother(settings::KalmanSettings, status::KalmanStatus, t_stop::Int64=1)
 
     # Initialise smoother history
     history_X = Array{FloatVector,1}();
@@ -507,7 +508,7 @@ function ksmoother(settings::KalmanSettings, status::KalmanStatus)
     J2 = Symmetric(zeros(settings.m, settings.m));
 
     # Loop over t
-    for t=retrieve_status_t(status):-1:1
+    for t=retrieve_status_t(status):-1:t_stop
 
         # Pointers
         Xp = status.history_X_prior[t];
@@ -526,9 +527,16 @@ function ksmoother(settings::KalmanSettings, status::KalmanStatus)
     end
 
     # Compute smoothed estimates for t==0
-    update_smoothing_factors!(settings, status, nothing, J1, J2);
-    X0 = backwards_pass(settings.X0, settings.P0, J1);
-    P0 = backwards_pass(settings.P0, J2);
+    if t_stop == 1
+        update_smoothing_factors!(settings, status, nothing, J1, J2);
+        X0 = backwards_pass(settings.X0, settings.P0, J1);
+        P0 = backwards_pass(settings.P0, J2);
+    
+    # Type-stable output for when t_stop != 1 (i.e., if the routine stops before t==1) and X0, P0 cannot be computed
+    else
+        X0 = zeros(1);
+        P0 = Symmetric(ones(1,1));
+    end
 
     # Return output
     return history_X, history_P, X0, P0;
