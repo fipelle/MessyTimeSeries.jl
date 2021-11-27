@@ -1,9 +1,9 @@
-# TSAnalysis.jl
-```TSAnalysis``` includes basic tools for time series analysis, compatible with incomplete data.
+# MessyTimeSeries.jl
+```MessyTimeSeries``` includes basic tools for time series analysis, compatible with incomplete data.
 
 ```julia
 import Pkg;
-Pkg.add("TSAnalysis")
+Pkg.add("MessyTimeSeries")
 ```
 
 ## Preface
@@ -25,7 +25,7 @@ Make sure that your FRED API is accessible to ```FredData``` (as in https://gith
 To run the examples below, execute first the following block of code:
 ```julia
 using Dates, DataFrames, LinearAlgebra, FredData, Optim, Plots, Measures;
-using TSAnalysis;
+using MessyTimeSeries;
 
 # Plots backend
 plotlyjs();
@@ -88,7 +88,7 @@ Y = permutedims(Y);
 
 #### Estimation
 
-Suppose that we want to estimate an ARIMA(1,1,1) model for the Industrial Production Index. ```TSAnalysis``` provides a simple interface for that:
+Suppose that we want to estimate an ARIMA(1,1,1) model for the Industrial Production Index. ```MessyTimeSeries``` provides a simple interface for that:
 ```julia
 # Estimation settings for an ARIMA(1,1,1)
 d = 1;
@@ -242,7 +242,7 @@ figure[3]
 ### Kalman filter and smoother
 
 #### Data
-The following examples show how to perform a standard univariate state-space decomposition (local linear trend + seasonal + noise decomposition) using the implementations of the Kalman filter and smoother in ```TSAnalysis```. These examples use non-seasonally adjusted (NSA) data that can be downloaded via:
+The following examples show how to perform a standard univariate state-space decomposition (local linear trend + seasonal + noise decomposition) using the implementations of the Kalman filter and smoother in ```MessyTimeSeries```. These examples use non-seasonally adjusted (NSA) data that can be downloaded via:
 ```julia
 # Download data of interest
 Y_df = download_fred_vintage(["IPGMFN"], ["log"]);
@@ -284,7 +284,7 @@ trend_llts = hcat(kstatus.history_X_post...)[1,:];
 ```
 
 #### Kalman filter (out-of-sample forecast)
-```TSAnalysis``` allows to compute *h*-step ahead forecasts for the latent states without resetting the Kalman filter. This is particularly efficient for applications wherein the number of observed time periods is particularly large, or for heavy out-of-sample exercises.
+```MessyTimeSeries``` allows to compute *h*-step ahead forecasts for the latent states without resetting the Kalman filter. This is particularly efficient for applications wherein the number of observed time periods is particularly large, or for heavy out-of-sample exercises.
 
 An easy way to compute the 12-step ahead prediction is to edit the block
 ```julia
@@ -318,7 +318,7 @@ history_Xs, history_Ps, X0s, P0s = ksmoother(ksettings, kstatus);
 ```
 
 ### Estimation of state-space models
-State-space models without a high-level interface can be estimated using ```TSAnalysis``` and ```Optim``` jointly.
+State-space models without a high-level interface can be estimated using ```MessyTimeSeries``` and ```Optim``` jointly.
 
 The state-space model described in the previous section can be estimated following the steps below.
 
@@ -360,7 +360,7 @@ function fmin(θ_unbound, Y; s::Int64=12)
     # Apply bounds
     θ_bound = copy(θ_unbound);
     for i=1:length(θ_bound)
-        θ_bound[i] = TSAnalysis.get_bounded_log(θ_bound[i], 1e-8);
+        θ_bound[i] = MessyTimeSeries.get_bounded_log(θ_bound[i], 1e-8);
     end
 
     # Compute loglikelihood
@@ -380,7 +380,7 @@ res = Optim.optimize(θ_unbound->fmin(θ_unbound, Y, s=12), θ_starting, NelderM
 # Apply bounds
 θ_bound = copy(res.minimizer);
 for i=1:length(θ_bound)
-    θ_bound[i] = TSAnalysis.get_bounded_log(θ_bound[i], 1e-8);
+    θ_bound[i] = MessyTimeSeries.get_bounded_log(θ_bound[i], 1e-8);
 end
 ```
 
@@ -415,7 +415,7 @@ p_slope = plot(Y_df[!,:date], hcat(history_Xs...)[2,:], label="Slope", color=RGB
 
 ### Bootstrap and jackknife subsampling
 
-```TSAnalysis``` provides support for the bootstrap and jackknife subsampling methods introduced in Kunsch (1989), Liu and Singh (1992), Pellegrino (2020), Politis and Romano (1994):
+```MessyTimeSeries``` provides support for the bootstrap and jackknife subsampling methods introduced in Kunsch (1989), Liu and Singh (1992), Pellegrino (2020), Politis and Romano (1994):
 
 * Artificial delete-*d* jackknife
 * Block bootstrap
