@@ -1,4 +1,4 @@
-using LinearAlgebra, Test, TSAnalysis;
+using LinearAlgebra, Test, MessyTimeSeries;
 
 """
     read_test_input(filepath::String)

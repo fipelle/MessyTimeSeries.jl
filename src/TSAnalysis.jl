@@ -1,6 +1,6 @@
 __precompile__()
 
-module TSAnalysis
+module MessyTimeSeries
 
     # Libraries
     using Dates, Distributed, Logging;
