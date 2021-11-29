@@ -3,7 +3,7 @@
 
 ```julia
 import Pkg;
-Pkg.add("MessyTimeSeries")
+Pkg.add("MessyTimeSeries");
 ```
 
 ##### The new documentation will soon be included in this readme file! The old documentation is in the ```OLD_README.md``` file.
