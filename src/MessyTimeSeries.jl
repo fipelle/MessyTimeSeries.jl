@@ -7,11 +7,11 @@ module MessyTimeSeries
     using LinearAlgebra, Distributions, StableRNGs, Statistics;
 
     # Custom dependencies
-    const local_path = dirname(@__FILE__);
-    include("$local_path/types.jl");
-    include("$local_path/methods.jl");
-    include("$local_path/kalman.jl");
-    include("$local_path/subsampling.jl");
+    local_path = dirname(@__FILE__);
+    include("$(local_path)/types.jl");
+    include("$(local_path)/methods.jl");
+    include("$(local_path)/kalman.jl");
+    include("$(local_path)/subsampling.jl");
 
     # Export types
     export IntVector, IntMatrix, IntArray, FloatVector, FloatMatrix, FloatArray, JVector, JMatrix, JArray, DiagMatrix, SymMatrix,
