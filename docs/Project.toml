@@ -1,0 +1,7 @@
+[deps]
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+MessyTimeSeries = "2a88db5c-15f1-4b3e-a070-d1159e8d76cc"
+
+[compat]
+Documenter = "0.27"
+MessyTimeSeries = "0.2"
