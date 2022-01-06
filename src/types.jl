@@ -45,7 +45,7 @@ The state space model used below is,
 
 ``X_{t} = C*X_{t-1} + D*U_{t}``
 
-where ``e_{t} ~ N(0_{nx1}, R)`` and ``U_{t} ~ N(0_{mx1}, Q)``.
+where ``e_{t} \\sim N(0_{nx1}, R)`` and ``U_{t} \\sim N(0_{mx1}, Q)``.
 
 # Arguments
 - `Y`: Observed measurements (`nxT`)
