@@ -7,7 +7,7 @@ Subsampling: Jackknife
 """
     block_jackknife(Y::Union{FloatMatrix, JMatrix{Float64}}, subsample::Float64)
 
-Generate block jackknife (Kunsch, 1989) samples. This implementation is described in Pellegrino (2020).
+Generate block jackknife (Kunsch, 1989) samples. This implementation is described in Pellegrino (2022).
 
 This technique subsamples a time series dataset by removing, in turn, all the blocks of consecutive observations with a given size.
 
@@ -16,7 +16,7 @@ This technique subsamples a time series dataset by removing, in turn, all the bl
 - `subsample`: Block size as a percentage of number of observed periods. It is bounded between 0 and 1.
 
 # References
-Kunsch (1989) and Pellegrino (2020).
+Kunsch (1989) and Pellegrino (2022).
 """
 function block_jackknife(Y::Union{FloatMatrix, JMatrix{Float64}}, subsample::Float64)
 
@@ -95,7 +95,7 @@ end
 """
     artificial_jackknife(Y::Union{FloatMatrix, JMatrix{Float64}}, subsample::Float64, max_samples::Int64, seed::Int64=1)
 
-Generate artificial jackknife samples as in Pellegrino (2020).
+Generate artificial jackknife samples as in Pellegrino (2022).
 
 The artificial delete-d jackknife is an extension of the delete-d jackknife for dependent data problems.
 - This technique replaces the actual data removal step with a fictitious deletion, which consists of imposing `d`-dimensional (artificial) patterns of missing observations to the data.
@@ -108,7 +108,7 @@ The artificial delete-d jackknife is an extension of the delete-d jackknife for 
 - `seed`: Random seed (default: 1).
 
 # References
-Pellegrino (2020).
+Pellegrino (2022).
 """
 function artificial_jackknife(Y::Union{FloatMatrix, JMatrix{Float64}}, subsample::Float64, max_samples::Int64, seed::Int64=1)
 
