@@ -7,3 +7,7 @@ makedocs(
         "Subsection" => ["man/methods.md"],
     ]
 );
+
+deploydocs(
+    repo = "github.com/fipelle/MessyTimeSeries.jl.git",
+)
