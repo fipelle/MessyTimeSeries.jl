@@ -21,4 +21,4 @@ julia> import Pkg; Pkg.add("MessyTimeSeries")
 ```
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
-[docs-stable-url]: https://juliadocs.github.io/MessyTimeSeries.jl/stable
+[docs-stable-url]: https://fipelle.github.io/MessyTimeSeries.jl/stable
