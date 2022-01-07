@@ -1,5 +1,5 @@
 # MessyTimeSeries.jl
-```MessyTimeSeries``` includes basic tools for time series analysis compatible with incomplete data. 
+A Julia implementation of basic tools for time series analysis compatible with incomplete data.
 
 | **Documentation**                                                              |
 |:-------------------------------------------------------------------------------:
