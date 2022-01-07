@@ -1,9 +1,11 @@
 # MessyTimeSeries.jl
-```MessyTimeSeries``` includes basic tools for time series analysis, compatible with incomplete data.
+```MessyTimeSeries``` includes basic tools for time series analysis, compatible with incomplete data. 
 
 | **Documentation**                                                              |
 |:-------------------------------------------------------------------------------:
 | [![][docs-stable-img]][docs-stable-url] [![][docs-dev-img]][docs-dev-url]      |
+
+More advanced estimation and validation algorithms are included in [```MessyTimeSeriesOptim```](https://github.com/fipelle/MessyTimeSeriesOptim.jl).
 
 ## Installation
 
