@@ -344,7 +344,7 @@ end
 """
     kfilter_full_sample(settings::KalmanSettings, status::KalmanStatus=DynamicKalmanStatus())
 
-Run Kalman filter for ``t=1, \ldots, T`` and return `status`.
+Run Kalman filter for ``t=1, \\ldots, T`` and return `status`.
 """
 function kfilter_full_sample(settings::KalmanSettings, status::KalmanStatus=DynamicKalmanStatus())
     for t=1:settings.Y.T
