@@ -350,14 +350,6 @@ Interpolate each series in `X`, in turn, by replacing missing observations with 
 # Arguments
 - `X`: observed measurements (`nxT`)
 - `n` and `T` are the number of series and observations
-
-    interpolate_series(X::FloatMatrix, n::Int64, T::Int64)
-
-Return `X`.
-
-# Arguments
-- `X`: observed measurements (`nxT`)
-- `n` and `T` are the number of series and observations
 """
 function interpolate_series(X::JMatrix{Float64}, n::Int64, T::Int64)
     data = copy(X);
@@ -368,20 +360,21 @@ function interpolate_series(X::JMatrix{Float64}, n::Int64, T::Int64)
     return output;
 end
 
+"""
+    interpolate_series(X::FloatMatrix, n::Int64, T::Int64)
+
+Return `X`.
+
+# Arguments
+- `X`: observed measurements (`nxT`)
+- `n` and `T` are the number of series and observations
+"""
 interpolate_series(X::FloatMatrix, n::Int64, T::Int64) = X;
 
 """
     forward_backwards_rw_interpolation(X::JMatrix{Float64}, n::Int64, T::Int64)
 
 Interpolate each non-stationary series in `X`, in turn, using a random walk logic both forward and backwards in time.
-
-# Arguments
-- `X`: observed measurements (`nxT`)
-- `n` and `T` are the number of series and observations
-
-    forward_backwards_rw_interpolation(X::FloatMatrix, n::Int64, T::Int64)
-
-Return `X`.
 
 # Arguments
 - `X`: observed measurements (`nxT`)
@@ -416,6 +409,15 @@ function forward_backwards_rw_interpolation(X::JMatrix{Float64}, n::Int64, T::In
     return output;
 end
 
+"""
+    forward_backwards_rw_interpolation(X::FloatMatrix, n::Int64, T::Int64)
+
+Return `X`.
+
+# Arguments
+- `X`: observed measurements (`nxT`)
+- `n` and `T` are the number of series and observations
+"""
 forward_backwards_rw_interpolation(X::FloatMatrix, n::Int64, T::Int64) = X;
 
 """
