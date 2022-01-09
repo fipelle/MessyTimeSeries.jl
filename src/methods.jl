@@ -220,9 +220,9 @@ The notation used for representing the discrete Lyapunov equation is
 
 ``P - APA' = Q``,
 
-where `P` and `Q` are symmetric. This equation is transformed into
+where ``P`` and ``Q`` are symmetric. This equation is transformed into
 
-`B'P + PB = -C`
+``B'P + PB = -C``
 
 # References
 Kailath (1980, page 180)
@@ -381,6 +381,10 @@ Interpolate each non-stationary series in `X`, in turn, using a random walk logi
 
     forward_backwards_rw_interpolation(X::FloatMatrix, n::Int64, T::Int64)
 
+# Arguments
+- `X`: observed measurements (`nxT`)
+- `n` and `T` are the number of series and observations
+
 Return `X`.
 """
 function forward_backwards_rw_interpolation(X::JMatrix{Float64}, n::Int64, T::Int64)
@@ -523,7 +527,7 @@ no_combinations(n::Int64, k::Int64) = factorial(big(n))/(factorial(big(k))*facto
 Draw `length(P)-d` elements from the positional vector `P` without replacement.
 `P` is permanently changed in the process.
 
-rand_without_replacement(rng::StableRNGs.LehmerRNG, n::Int64, T::Int64, d::Int64)
+    rand_without_replacement(rng::StableRNGs.LehmerRNG, n::Int64, T::Int64, d::Int64)
 
 Draw `length(P)-d` elements from the positional vector `P` without replacement.
 In the sampling process, no more than n-1 elements are removed for each point in time.

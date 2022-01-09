@@ -38,7 +38,7 @@ sum_skipmissing
 ## Time-series operations
 
 ### Foundations
-```docs
+```@docs
 companion_form
 lag
 ```
