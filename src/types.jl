@@ -20,7 +20,7 @@ Kalman structures
 """
     MSeries(...)
 
-Convenient mutable struct used in KalmanSettings for describing the data in a dynamic fashion.
+Convenient mutable struct used in `KalmanSettings` for describing the data in a dynamic fashion.
 
 # Arguments
 - `data`: Observed measurements (`nxT`)
@@ -48,7 +48,7 @@ The state space model used below is,
 where ``e_{t} \\sim N(0_{nx1}, R)`` and ``U_{t} \\sim N(0_{mx1}, Q)``.
 
 # Fields
-- `Y`: Observed measurements (``nxT``)
+- `Y`: Observed measurements (`nxT`)
 - `B`: Measurement equations' coefficients
 - `R`: Covariance matrix of the measurement equations' error terms
 - `C`: Transition equations' coefficients
@@ -83,10 +83,10 @@ KalmanSettings constructors
 """
     KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, Q::SymMatrix; kwargs...)
 
-KalmanSettings constructor.
+`KalmanSettings` constructor.
 
 # Arguments
-- `Y`: Observed measurements (``nxT``)
+- `Y`: Observed measurements (`nxT`)
 - `B`: Measurement equations' coefficients
 - `R`: Covariance matrix of the measurement equations' error terms
 - `C`: Transition equations' coefficients
@@ -115,10 +115,10 @@ end
 """
     KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix; kwargs...)
 
-KalmanSettings constructor.
+`KalmanSettings` constructor.
 
 # Arguments
-- `Y`: Observed measurements (``nxT``)
+- `Y`: Observed measurements (`nxT`)
 - `B`: Measurement equations' coefficients
 - `R`: Covariance matrix of the measurement equations' error terms
 - `C`: Transition equations' coefficients
@@ -148,10 +148,10 @@ end
 """
     KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatVector, P0::SymMatrix; kwargs...)
 
-KalmanSettings constructor.
+`KalmanSettings` constructor.
 
 # Arguments
-- `Y`: Observed measurements (``nxT``)
+- `Y`: Observed measurements (`nxT`)
 - `B`: Measurement equations' coefficients
 - `R`: Covariance matrix of the measurement equations' error terms
 - `C`: Transition equations' coefficients
@@ -215,7 +215,7 @@ end
 """
     OnlineKalmanStatus()
 
-Return an initialised OnlineKalmanStatus.
+Return an initialised `OnlineKalmanStatus`.
 """
 OnlineKalmanStatus() = OnlineKalmanStatus(0, [nothing for i=1:12]...);
 
@@ -271,7 +271,7 @@ end
 """
     DynamicKalmanStatus()
 
-Return an initialised DynamicKalmanStatus.
+Return an initialised `DynamicKalmanStatus`.
 """
 DynamicKalmanStatus() = DynamicKalmanStatus(0, [nothing for i=1:19]...);
 
@@ -306,7 +306,7 @@ end
 """
     SizedKalmanStatus(T::Int64)
 
-Return an initialised SizedKalmanStatus for some ``T``.
+Return an initialised `SizedKalmanStatus` for some ``T``.
 """
 function SizedKalmanStatus(T::Int64)
     history_X_prior = Array{FloatVector,1}(undef, T);
