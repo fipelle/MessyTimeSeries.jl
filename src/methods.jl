@@ -381,11 +381,11 @@ Interpolate each non-stationary series in `X`, in turn, using a random walk logi
 
     forward_backwards_rw_interpolation(X::FloatMatrix, n::Int64, T::Int64)
 
+Return `X`.
+
 # Arguments
 - `X`: observed measurements (`nxT`)
 - `n` and `T` are the number of series and observations
-
-Return `X`.
 """
 function forward_backwards_rw_interpolation(X::JMatrix{Float64}, n::Int64, T::Int64)
 
