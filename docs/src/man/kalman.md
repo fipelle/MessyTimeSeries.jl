@@ -1,5 +1,7 @@
 # Kalman filter and smoother
 
+The Kalman filter and smoother included in this package use symmetric matrices (via ```LinearAlgebra```) and the Joseph's stabilised form. This is particularly beneficial for the stability and speed of estimation algorithms (e.g., the EM algorithm in Shumway and Stoffer, 1982), and to handle high-dimensional forecasting problems.
+
 ## Types
 
 The Kalman filter and smoother are controlled by two custom types: `KalmanSettings` and `KalmanStatus`. `KalmanSettings` contains the data, model parameters and a few auxiliary variables useful to speed-up the filtering and smoothing routines. `KalmanStatus` is an abstract supertype denoting a container for the filter and low-level smoother output. This is specified into the following three structures:

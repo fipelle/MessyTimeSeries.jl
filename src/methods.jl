@@ -301,7 +301,7 @@ Time series
     demean(X::JVector{Float64})
     demean(X::JMatrix{Float64})
 
-Demean complete `X`.
+Demean `X`.
 
 # Examples
 ```jldoctest
@@ -470,6 +470,19 @@ function centred_moving_average(X::Union{FloatMatrix, JMatrix{Float64}}, n::Int6
 end
 
 """
+    centred_moving_average(X::Union{FloatMatrix, JMatrix{Float64}}, window::Int64)
+
+Compute the centred moving average of `X`.
+
+# Arguments
+- `X`: observed measurements (`nxT`)
+- `window` is the total number of observations (lagging, current and leading) included in the average
+"""
+function centred_moving_average(X::Union{FloatMatrix, JMatrix{Float64}}, window::Int64)
+    return centred_moving_average(X, size(X)..., window);
+end
+
+"""
     lag(X::FloatArray, p::Int64)
 
 Construct the data required to run a standard vector autoregression.
@@ -538,6 +551,7 @@ no_combinations(n::Int64, k::Int64) = factorial(big(n))/(factorial(big(k))*facto
     rand_without_replacement(rng::StableRNGs.LehmerRNG, nT::Int64, d::Int64)
 
 Draw `length(P)-d` elements from the positional vector `P` without replacement.
+
 `P` is permanently changed in the process.
 
 # Examples
@@ -568,9 +582,9 @@ end
 """
     rand_without_replacement(rng::StableRNGs.LehmerRNG, n::Int64, T::Int64, d::Int64)
 
-Draw `length(P)-d` elements from the positional vector `P` without replacement.
-In the sampling process, no more than n-1 elements are removed for each point in time.
-`P` is permanently changed in the process.
+Draw `length(P)-d` elements from the positional vector `P` without replacement. 
+
+In the sampling process, no more than n-1 elements are removed for each point in time. `P` is permanently changed in the process.
 """
 function rand_without_replacement(rng::StableRNGs.LehmerRNG, n::Int64, T::Int64, d::Int64)
 
