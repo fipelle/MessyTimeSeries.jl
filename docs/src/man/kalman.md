@@ -54,17 +54,8 @@ The a-priori prediction and a-posteriori update can be computed for a single poi
 
 ```@docs
 kfilter!
-```
-
-```@docs
 kfilter_full_sample
-```
-
-```@docs
 kfilter_full_sample!
-```
-
-```@docs
 kforecast
 ```
 
