@@ -18,14 +18,17 @@ KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMa
 
 ```@docs
 OnlineKalmanStatus
+OnlineKalmanStatus()
 ```
 
 ```@docs
 DynamicKalmanStatus
+DynamicKalmanStatus()
 ```
 
 ```@docs
 SizedKalmanStatus
+SizedKalmanStatus(T::Int64)
 ```
 
 ## Functions
