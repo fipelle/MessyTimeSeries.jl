@@ -95,6 +95,9 @@ KalmanSettings constructor.
 # Keyword arguments
 - `compute_loglik`: Boolean (true for computing the loglikelihood in the Kalman filter - default: true)
 - `store_history`: Boolean (true to store the history of the filter and smoother - default: true)
+
+# Notes
+This particular constructor sets `D` to be an identity matrix, `X0` to be a vector of zeros and computes `P0` via `solve_discrete_lyapunov(C, Q)`.
 """
 function KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, Q::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
 
@@ -125,6 +128,9 @@ KalmanSettings constructor.
 # Keyword arguments
 - `compute_loglik`: Boolean (true for computing the loglikelihood in the Kalman filter - default: true)
 - `store_history`: Boolean (true to store the history of the filter and smoother - default: true)
+
+# Notes
+This particular constructor sets `X0` to be a vector of zeros and computes `P0` via `solve_discrete_lyapunov(C, Q)`.
 """
 function KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
 
