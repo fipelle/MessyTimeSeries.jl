@@ -47,7 +47,7 @@ The state space model used below is,
 
 where ``e_{t} \\sim N(0_{nx1}, R)`` and ``U_{t} \\sim N(0_{mx1}, Q)``.
 
-# Arguments
+# Fields
 - `Y`: Observed measurements (`nxT`)
 - `B`: Measurement equations' coefficients
 - `R`: Covariance matrix of the measurement equations' error terms
@@ -56,7 +56,7 @@ where ``e_{t} \\sim N(0_{nx1}, R)`` and ``U_{t} \\sim N(0_{mx1}, Q)``.
 - `Q`: Covariance matrix of the transition equations' error terms
 - `X0`: Mean vector for the states at time t=0
 - `P0`: Covariance matrix for the states at time t=0
-- `DQD`: Covariance matrix of D*U_{t} (i.e., D*Q*D')
+- `DQD`: Covariance matrix of ``D*U_{t}`` (i.e., ``D*Q*D'``)
 - `m`: Number of latent states
 - `compute_loglik`: Boolean (true for computing the loglikelihood in the Kalman filter)
 - `store_history`: Boolean (true to store the history of the filter and smoother)
@@ -80,6 +80,22 @@ end
 KalmanSettings constructors
 =#
 
+"""
+    KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, Q::SymMatrix; kwargs...)
+
+KalmanSettings constructor.
+
+# Arguments
+- `Y`: Observed measurements (`nxT`)
+- `B`: Measurement equations' coefficients
+- `R`: Covariance matrix of the measurement equations' error terms
+- `C`: Transition equations' coefficients
+- `Q`: Covariance matrix of the transition equations' error terms
+
+# Keyword arguments
+- `compute_loglik`: Boolean (true for computing the loglikelihood in the Kalman filter - default: true)
+- `store_history`: Boolean (true to store the history of the filter and smoother - default: true)
+"""
 function KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, Q::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
 
     # Compute default value for missing parameters
@@ -93,6 +109,23 @@ function KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix,
     return KalmanSettings(MSeries(Y, n, T), B, R, C, D, Q, X0, P0, Q, m, compute_loglik, store_history);
 end
 
+"""
+    KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix; kwargs...)
+
+KalmanSettings constructor.
+
+# Arguments
+- `Y`: Observed measurements (`nxT`)
+- `B`: Measurement equations' coefficients
+- `R`: Covariance matrix of the measurement equations' error terms
+- `C`: Transition equations' coefficients
+- `D`: Transition equations' coefficients associated to the error terms
+- `Q`: Covariance matrix of the transition equations' error terms
+
+# Keyword arguments
+- `compute_loglik`: Boolean (true for computing the loglikelihood in the Kalman filter - default: true)
+- `store_history`: Boolean (true to store the history of the filter and smoother - default: true)
+"""
 function KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
 
     # Compute default value for missing parameters
@@ -106,6 +139,25 @@ function KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix,
     return KalmanSettings(MSeries(Y, n, T), B, R, C, D, Q, X0, P0, DQD, m, compute_loglik, store_history);
 end
 
+"""
+    KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatVector, P0::SymMatrix; kwargs...)
+
+KalmanSettings constructor.
+
+# Arguments
+- `Y`: Observed measurements (`nxT`)
+- `B`: Measurement equations' coefficients
+- `R`: Covariance matrix of the measurement equations' error terms
+- `C`: Transition equations' coefficients
+- `D`: Transition equations' coefficients associated to the error terms
+- `Q`: Covariance matrix of the transition equations' error terms
+- `X0`: Mean vector for the states at time t=0
+- `P0`: Covariance matrix for the states at time t=0
+
+# Keyword arguments
+- `compute_loglik`: Boolean (true for computing the loglikelihood in the Kalman filter - default: true)
+- `store_history`: Boolean (true to store the history of the filter and smoother - default: true)
+"""
 function KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatVector, P0::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
 
     # Compute default value for missing parameters
