@@ -15,12 +15,14 @@ verb_message(verb::Bool, message::String) = verb ? @info(message) : nothing;
     check_bounds(X::Real, LB::Real, UB::Real)
 
 Check whether `X` is larger or equal than `LB` and lower or equal than `UB`
+"""
+check_bounds(X::Real, LB::Real, UB::Real) = X < LB || X > UB ? throw(DomainError) : nothing
 
+"""
     check_bounds(X::Real, LB::Real)
 
 Check whether `X` is larger or equal than `LB`
 """
-check_bounds(X::Real, LB::Real, UB::Real) = X < LB || X > UB ? throw(DomainError) : nothing
 check_bounds(X::Real, LB::Real) = X < LB ? throw(DomainError) : nothing
 
 """
@@ -62,6 +64,16 @@ end
 
 Compute the sum of the observed values in `X`.
 
+# Examples
+```jldoctest
+julia> sum_skipmissing([1.0; missing; 3.0])
+4.0
+```
+"""
+sum_skipmissing(X::AbstractVector{Float64}) = sum(X);
+sum_skipmissing(X::AbstractVector{Union{Missing, Float64}}) = sum(skipmissing(X));
+
+"""
     sum_skipmissing(X::AbstractMatrix{Float64})
     sum_skipmissing(X::AbstractMatrix{Union{Missing, Float64}})
 
@@ -69,9 +81,6 @@ Compute the sum of the observed values in `X` column wise.
 
 # Examples
 ```jldoctest
-julia> sum_skipmissing([1.0; missing; 3.0])
-4.0
-
 julia> sum_skipmissing([1.0 2.0; missing 3.0; 3.0 5.0])
 3-element Array{Float64,1}:
  3.0
@@ -79,9 +88,7 @@ julia> sum_skipmissing([1.0 2.0; missing 3.0; 3.0 5.0])
  8.0
 ```
 """
-sum_skipmissing(X::AbstractVector{Float64}) = sum(X);
 sum_skipmissing(X::AbstractMatrix{Float64}) = sum(X, dims=2);
-sum_skipmissing(X::AbstractVector{Union{Missing, Float64}}) = sum(skipmissing(X));
 
 function sum_skipmissing(X::AbstractMatrix{Union{Missing, Float64}})
     n = size(X,1);
@@ -100,6 +107,16 @@ end
 
 Compute the mean of the observed values in `X`.
 
+# Examples
+```jldoctest
+julia> mean_skipmissing([1.0; missing; 3.0])
+2.0
+```
+"""
+mean_skipmissing(X::AbstractVector{Float64}) = mean(X);
+mean_skipmissing(X::AbstractVector{Union{Missing, Float64}}) = mean(skipmissing(X));
+
+"""
     mean_skipmissing(X::AbstractMatrix{Float64})
     mean_skipmissing(X::AbstractMatrix{Union{Missing, Float64}})
 
@@ -107,9 +124,6 @@ Compute the mean of the observed values in `X` column wise.
 
 # Examples
 ```jldoctest
-julia> mean_skipmissing([1.0; missing; 3.0])
-2.0
-
 julia> mean_skipmissing([1.0 2.0; missing 3.0; 3.0 5.0])
 3-element Array{Float64,1}:
  1.5
@@ -117,9 +131,7 @@ julia> mean_skipmissing([1.0 2.0; missing 3.0; 3.0 5.0])
  4.0
 ```
 """
-mean_skipmissing(X::AbstractVector{Float64}) = mean(X);
 mean_skipmissing(X::AbstractMatrix{Float64}) = mean(X, dims=2);
-mean_skipmissing(X::AbstractVector{Union{Missing, Float64}}) = mean(skipmissing(X));
 
 function mean_skipmissing(X::AbstractMatrix{Union{Missing, Float64}})
     n = size(X,1);
@@ -138,6 +150,16 @@ end
 
 Compute the standard deviation of the observed values in `X`.
 
+# Examples
+```jldoctest
+julia> std_skipmissing([1.0; missing; 3.0])
+1.4142135623730951
+```
+"""
+std_skipmissing(X::AbstractVector{Float64}) = std(X);
+std_skipmissing(X::AbstractVector{Union{Missing, Float64}}) = std(skipmissing(X));
+
+"""
     std_skipmissing(X::AbstractMatrix{Float64})
     std_skipmissing(X::AbstractMatrix{Union{Missing, Float64}})
 
@@ -145,9 +167,6 @@ Compute the standard deviation of the observed values in `X` column wise.
 
 # Examples
 ```jldoctest
-julia> std_skipmissing([1.0; missing; 3.0])
-1.4142135623730951
-
 julia> std_skipmissing([1.0 2.0; missing 3.0; 3.0 5.0])
 3-element Array{Float64,1}:
    0.7071067811865476
@@ -155,9 +174,7 @@ julia> std_skipmissing([1.0 2.0; missing 3.0; 3.0 5.0])
    1.4142135623730951
 ```
 """
-std_skipmissing(X::AbstractVector{Float64}) = std(X);
 std_skipmissing(X::AbstractMatrix{Float64}) = std(X, dims=2);
-std_skipmissing(X::AbstractVector{Union{Missing, Float64}}) = std(skipmissing(X));
 
 function std_skipmissing(X::AbstractMatrix{Union{Missing, Float64}})
     n = size(X,1);
@@ -281,13 +298,10 @@ Time series
 """
     demean(X::FloatVector)
     demean(X::FloatMatrix)
-
-Demean complete data.
-
     demean(X::JVector{Float64})
     demean(X::JMatrix{Float64})
 
-Demean incomplete data.
+Demean complete `X`.
 
 # Examples
 ```jldoctest
@@ -313,13 +327,10 @@ demean(X::JMatrix{Float64}) = X .- mean_skipmissing(X);
 """
     standardise(X::FloatVector)
     standardise(X::FloatMatrix)
-
-Standardise complete data.
-
     standardise(X::JVector{Float64})
     standardise(X::JMatrix{Float64})
 
-Standardise incomplete data.
+Standardise `X`.
 
 # Examples
 ```jldoctest
@@ -529,12 +540,6 @@ no_combinations(n::Int64, k::Int64) = factorial(big(n))/(factorial(big(k))*facto
 Draw `length(P)-d` elements from the positional vector `P` without replacement.
 `P` is permanently changed in the process.
 
-    rand_without_replacement(rng::StableRNGs.LehmerRNG, n::Int64, T::Int64, d::Int64)
-
-Draw `length(P)-d` elements from the positional vector `P` without replacement.
-In the sampling process, no more than n-1 elements are removed for each point in time.
-`P` is permanently changed in the process.
-
 # Examples
 ```jldoctest
 julia> rand_without_replacement(StableRNG(1), 20, 5)
@@ -560,6 +565,13 @@ function rand_without_replacement(rng::StableRNGs.LehmerRNG, nT::Int64, d::Int64
     return setdiff(1:nT, P);
 end
 
+"""
+    rand_without_replacement(rng::StableRNGs.LehmerRNG, n::Int64, T::Int64, d::Int64)
+
+Draw `length(P)-d` elements from the positional vector `P` without replacement.
+In the sampling process, no more than n-1 elements are removed for each point in time.
+`P` is permanently changed in the process.
+"""
 function rand_without_replacement(rng::StableRNGs.LehmerRNG, n::Int64, T::Int64, d::Int64)
 
     # Positional vector
