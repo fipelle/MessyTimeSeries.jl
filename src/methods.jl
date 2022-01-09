@@ -383,6 +383,16 @@ Return `X`.
 interpolate_series(X::FloatMatrix, n::Int64, T::Int64) = X;
 
 """
+    interpolate_series(X::Union{FloatMatrix, JMatrix{Float64}})
+
+Interpolate each series in `X`, in turn, by replacing missing observations with the sample average of the non-missing values.
+
+# Arguments
+- `X`: observed measurements (`nxT`)
+"""
+interpolate_series(X::Union{FloatMatrix, JMatrix{Float64}}) = interpolate_series(X, size(X)...);
+
+"""
     forward_backwards_rw_interpolation(X::JMatrix{Float64}, n::Int64, T::Int64)
 
 Interpolate each non-stationary series in `X`, in turn, using a random walk logic both forward and backwards in time.
@@ -430,6 +440,16 @@ Return `X`.
 - `n` and `T` are the number of series and observations
 """
 forward_backwards_rw_interpolation(X::FloatMatrix, n::Int64, T::Int64) = X;
+
+"""
+    forward_backwards_rw_interpolation(X::JMatrix{Float64})
+
+Interpolate each non-stationary series in `X`, in turn, using a random walk logic both forward and backwards in time.
+
+# Arguments
+- `X`: observed measurements (`nxT`)
+"""
+forward_backwards_rw_interpolation(X::JMatrix{Float64}) = forward_backwards_rw_interpolation(X, size(X)...);
 
 """
     centred_moving_average(X::Union{FloatMatrix, JMatrix{Float64}}, n::Int64, T::Int64, window::Int64)
