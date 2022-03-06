@@ -342,9 +342,9 @@ function reset_kalman_status!(status::KalmanStatus)
 end
 
 """
-    kfilter_full_sample(settings::KalmanSettings)
+    kfilter_full_sample(settings::KalmanSettings, status::KalmanStatus=DynamicKalmanStatus())
 
-Run Kalman filter from t=1 to T.
+Run Kalman filter for ``t=1, \\ldots, T`` and return `status`.
 """
 function kfilter_full_sample(settings::KalmanSettings, status::KalmanStatus=DynamicKalmanStatus())
     for t=1:settings.Y.T
@@ -357,7 +357,7 @@ end
 """
     kfilter_full_sample!(settings::KalmanSettings, status::SizedKalmanStatus)
 
-Run Kalman filter from t=1 to `history_length` and update `status` in-place.
+Run Kalman filter from `t=1` to `history_length` and update `status` in-place.
 """
 function kfilter_full_sample!(settings::KalmanSettings, status::SizedKalmanStatus)
     reset_kalman_status!(status.online_status);
@@ -369,7 +369,7 @@ end
 """
     kforecast(settings::KalmanSettings, X::Union{FloatVector, Nothing}, h::Int64)
 
-Forecast X up to h-step ahead.
+Forecast `X` up to `h` steps ahead.
 
 # Arguments
 - `settings`: KalmanSettings struct
@@ -378,7 +378,7 @@ Forecast X up to h-step ahead.
 
     kforecast(settings::KalmanSettings, X::Union{FloatVector, Nothing}, P::Union{SymMatrix, Nothing}, h::Int64)
 
-Forecast X and P up to h-step ahead.
+Forecast `X` and `P` up to `h` steps ahead.
 
 # Arguments
 - `settings`: KalmanSettings struct
@@ -489,7 +489,7 @@ backwards_pass(Pp::SymMatrix, J2::SymMatrix) = Symmetric(Pp - Pp*J2*Pp);
 """
     ksmoother(settings::KalmanSettings, status::KalmanStatus, t_stop::Int64=1)
 
-Kalman smoother: RTS smoother from the last evaluated time period in status to t==0.
+Kalman smoother: RTS smoother from the last evaluated time period in `status` up to ``t==0``.
 
 The smoother is implemented following the approach proposed in Durbin and Koopman (2012).
 

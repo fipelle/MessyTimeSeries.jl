@@ -3,8 +3,9 @@ makedocs(
     sitename="MessyTimeSeries.jl",     
     pages = [
         "index.md",
-        "Main content" => ["man/kalman.md", "man/subsampling.md"],
-        "Subsection" => ["man/methods.md"],
+        "man/getting_started.md",
+        "Manual" => ["man/kalman.md", "man/subsampling.md"],
+        "Appendix" => ["man/methods.md"],
     ]
 );
 

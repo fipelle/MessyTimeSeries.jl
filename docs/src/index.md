@@ -8,6 +8,7 @@
 Pages = [
     "man/kalman.md",
     "man/subsampling.md",
+    "man/getting_started.md",
     "man/methods.md",
 ]
 Depth = 1

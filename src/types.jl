@@ -20,7 +20,7 @@ Kalman structures
 """
     MSeries(...)
 
-Convenient mutable struct used in KalmanSettings for describing the data in a dynamic fashion.
+Convenient mutable struct used in `KalmanSettings` for describing the data in a dynamic fashion.
 
 # Arguments
 - `data`: Observed measurements (`nxT`)
@@ -47,19 +47,19 @@ The state space model used below is,
 
 where ``e_{t} \\sim N(0_{nx1}, R)`` and ``U_{t} \\sim N(0_{mx1}, Q)``.
 
-# Arguments
+# Fields
 - `Y`: Observed measurements (`nxT`)
 - `B`: Measurement equations' coefficients
 - `R`: Covariance matrix of the measurement equations' error terms
 - `C`: Transition equations' coefficients
 - `D`: Transition equations' coefficients associated to the error terms
 - `Q`: Covariance matrix of the transition equations' error terms
-- `X0`: Mean vector for the states at time t=0
-- `P0`: Covariance matrix for the states at time t=0
-- `DQD`: Covariance matrix of D*U_{t} (i.e., D*Q*D')
+- `X0`: Mean vector for the states at time ``t=0``
+- `P0`: Covariance matrix for the states at time ``t=0``
+- `DQD`: Covariance matrix of ``D*U_{t}`` (i.e., ``D*Q*D'``)
 - `m`: Number of latent states
-- `compute_loglik`: Boolean (true for computing the loglikelihood in the Kalman filter)
-- `store_history`: Boolean (true to store the history of the filter and smoother)
+- `compute_loglik`: Boolean (`true` for computing the loglikelihood in the Kalman filter)
+- `store_history`: Boolean (`true` to store the history of the filter and smoother)
 """
 struct KalmanSettings
     Y::MSeries
@@ -80,6 +80,25 @@ end
 KalmanSettings constructors
 =#
 
+"""
+    KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, Q::SymMatrix; kwargs...)
+
+`KalmanSettings` constructor.
+
+# Arguments
+- `Y`: Observed measurements (`nxT`)
+- `B`: Measurement equations' coefficients
+- `R`: Covariance matrix of the measurement equations' error terms
+- `C`: Transition equations' coefficients
+- `Q`: Covariance matrix of the transition equations' error terms
+
+# Keyword arguments
+- `compute_loglik`: Boolean (`true` for computing the loglikelihood in the Kalman filter - default: `true`)
+- `store_history`: Boolean (`true` to store the history of the filter and smoother - default: `true`)
+
+# Notes
+This particular constructor sets `D` to be an identity matrix, `X0` to be a vector of zeros and computes `P0` via `solve_discrete_lyapunov(C, Q)`.
+"""
 function KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, Q::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
 
     # Compute default value for missing parameters
@@ -93,6 +112,26 @@ function KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix,
     return KalmanSettings(MSeries(Y, n, T), B, R, C, D, Q, X0, P0, Q, m, compute_loglik, store_history);
 end
 
+"""
+    KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix; kwargs...)
+
+`KalmanSettings` constructor.
+
+# Arguments
+- `Y`: Observed measurements (`nxT`)
+- `B`: Measurement equations' coefficients
+- `R`: Covariance matrix of the measurement equations' error terms
+- `C`: Transition equations' coefficients
+- `D`: Transition equations' coefficients associated to the error terms
+- `Q`: Covariance matrix of the transition equations' error terms
+
+# Keyword arguments
+- `compute_loglik`: Boolean (`true` for computing the loglikelihood in the Kalman filter - default: `true`)
+- `store_history`: Boolean (`true` to store the history of the filter and smoother - default: `true`)
+
+# Notes
+This particular constructor sets `X0` to be a vector of zeros and computes `P0` via `solve_discrete_lyapunov(C, Q)`.
+"""
 function KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
 
     # Compute default value for missing parameters
@@ -106,6 +145,25 @@ function KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix,
     return KalmanSettings(MSeries(Y, n, T), B, R, C, D, Q, X0, P0, DQD, m, compute_loglik, store_history);
 end
 
+"""
+    KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatVector, P0::SymMatrix; kwargs...)
+
+`KalmanSettings` constructor.
+
+# Arguments
+- `Y`: Observed measurements (`nxT`)
+- `B`: Measurement equations' coefficients
+- `R`: Covariance matrix of the measurement equations' error terms
+- `C`: Transition equations' coefficients
+- `D`: Transition equations' coefficients associated to the error terms
+- `Q`: Covariance matrix of the transition equations' error terms
+- `X0`: Mean vector for the states at time ``t=0``
+- `P0`: Covariance matrix for the states at time ``t=0``
+
+# Keyword arguments
+- `compute_loglik`: Boolean (`true` for computing the loglikelihood in the Kalman filter - default: `true`)
+- `store_history`: Boolean (`true` to store the history of the filter and smoother - default: `true`)
+"""
 function KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatVector, P0::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
 
     # Compute default value for missing parameters
@@ -154,7 +212,11 @@ mutable struct OnlineKalmanStatus <: KalmanStatus
     buffer_m_n_obs::Union{FloatMatrix, Nothing}
 end
 
-# OnlineKalmanStatus constructor
+"""
+    OnlineKalmanStatus()
+
+Return an initialised `OnlineKalmanStatus`.
+"""
 OnlineKalmanStatus() = OnlineKalmanStatus(0, [nothing for i=1:12]...);
 
 """
@@ -206,13 +268,17 @@ mutable struct DynamicKalmanStatus <: KalmanStatus
     history_L::Union{Array{FloatMatrix,1}, Nothing}
 end
 
-# DynamicKalmanStatus constructor
+"""
+    DynamicKalmanStatus()
+
+Return an initialised `DynamicKalmanStatus`.
+"""
 DynamicKalmanStatus() = DynamicKalmanStatus(0, [nothing for i=1:19]...);
 
 """
     SizedKalmanStatus(...)
 
-Define an immutable structure that always store the filter history up to time T.
+Define an immutable structure that always store the filter history up to time ``T``.
 
 # Arguments
 - `online_status`: `OnlineKalmanStatus` struct
@@ -237,7 +303,11 @@ struct SizedKalmanStatus <: KalmanStatus
     history_L::Array{FloatMatrix,1}
 end
 
-# SizedKalmanStatus constructor
+"""
+    SizedKalmanStatus(T::Int64)
+
+Return an initialised `SizedKalmanStatus` for some ``T``.
+"""
 function SizedKalmanStatus(T::Int64)
     history_X_prior = Array{FloatVector,1}(undef, T);
     history_X_post = Array{FloatVector,1}(undef, T);
