@@ -9,8 +9,6 @@ makedocs(
     ]
 );
 
-#=
 deploydocs(
     repo = "github.com/fipelle/MessyTimeSeries.jl.git",
 )
-=#
