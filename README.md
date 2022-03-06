@@ -1,6 +1,5 @@
-<img src="./docs/src/assets/logo.svg" style="width:500px;height:500px;">
+<img src="./docs/src/assets/logo.svg" style="width:600px">
 
-# MessyTimeSeries.jl
 A Julia implementation of basic tools for time series analysis compatible with incomplete data.
 
 | **Documentation**                                                              |
