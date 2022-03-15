@@ -64,7 +64,7 @@ where ``e_{t} \\sim N(0_{nx1}, R)`` and ``U_{t} \\sim N(0_{mx1}, Q)``.
 struct KalmanSettings
     Y::MSeries
     B::FloatMatrix
-    R::SymMatrix
+    R::Union{UniformScaling{Float64}, SymMatrix}
     C::FloatMatrix
     D::FloatMatrix
     Q::SymMatrix
@@ -81,7 +81,7 @@ KalmanSettings constructors
 =#
 
 """
-    KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, Q::SymMatrix; kwargs...)
+    KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::Union{UniformScaling{Float64}, SymMatrix}, C::FloatMatrix, Q::SymMatrix; kwargs...)
 
 `KalmanSettings` constructor.
 
@@ -99,7 +99,7 @@ KalmanSettings constructors
 # Notes
 This particular constructor sets `D` to be an identity matrix, `X0` to be a vector of zeros and computes `P0` via `solve_discrete_lyapunov(C, Q)`.
 """
-function KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, Q::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
+function KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::Union{UniformScaling{Float64}, SymMatrix}, C::FloatMatrix, Q::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
 
     # Compute default value for missing parameters
     n, T = size(Y);
@@ -113,7 +113,7 @@ function KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix,
 end
 
 """
-    KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix; kwargs...)
+    KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::Union{UniformScaling{Float64}, SymMatrix}, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix; kwargs...)
 
 `KalmanSettings` constructor.
 
@@ -132,7 +132,7 @@ end
 # Notes
 This particular constructor sets `X0` to be a vector of zeros and computes `P0` via `solve_discrete_lyapunov(C, Q)`.
 """
-function KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
+function KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::Union{UniformScaling{Float64}, SymMatrix}, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
 
     # Compute default value for missing parameters
     n, T = size(Y);
@@ -146,7 +146,7 @@ function KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix,
 end
 
 """
-    KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatVector, P0::SymMatrix; kwargs...)
+    KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::Union{UniformScaling{Float64}, SymMatrix}, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatVector, P0::SymMatrix; kwargs...)
 
 `KalmanSettings` constructor.
 
@@ -164,7 +164,7 @@ end
 - `compute_loglik`: Boolean (`true` for computing the loglikelihood in the Kalman filter - default: `true`)
 - `store_history`: Boolean (`true` to store the history of the filter and smoother - default: `true`)
 """
-function KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatVector, P0::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
+function KalmanSettings(Y::Union{FloatMatrix, JMatrix{Float64}}, B::FloatMatrix, R::Union{UniformScaling{Float64}, SymMatrix}, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatVector, P0::SymMatrix; compute_loglik::Bool=true, store_history::Bool=true)
 
     # Compute default value for missing parameters
     n, T = size(Y);

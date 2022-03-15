@@ -168,19 +168,55 @@ function find_observed_data(settings::KalmanSettings, t::Int64)
 end
 
 """
-    update_P_post!(P_post_old::SymMatrix, status::KalmanStatus, K_t::FloatMatrix, R_t::SubArray{Float64})
-    update_P_post!(P_post_old::Nothing, status::KalmanStatus, K_t::FloatMatrix, R_t::SubArray{Float64})
+    update_inv_F!(R::UniformScaling{Float64}, status::KalmanStatus, B_t::SubArray{Float64}, ind_not_missings::IntVector)
+    update_inv_F!(R::SymMatrix, status::KalmanStatus, B_t::SubArray{Float64}, ind_not_missings::IntVector)
+
+Update status.inv_F.
+"""
+function update_inv_F!(R::UniformScaling{Float64}, status::KalmanStatus, B_t::SubArray{Float64}, ind_not_missings::IntVector)
+    F_t = status.buffer_m_n_obs'*B_t'; # I cannot use mul!(...) here since R is UniformScaling{Float64}
+    F_t += R;
+    status.inv_F = inv(Symmetric(F_t));
+end
+
+function update_inv_F!(R::SymMatrix, status::KalmanStatus, B_t::SubArray{Float64}, ind_not_missings::IntVector)
+    F_t = R[ind_not_missings, ind_not_missings];
+    mul!(F_t, status.buffer_m_n_obs', B_t', 1.0, 1.0);
+    status.inv_F = inv(Symmetric(F_t));
+end
+
+"""
+    update_P_post!(P_post_old::SymMatrix, R_t::UniformScaling{Float64}, status::KalmanStatus, K_t::FloatMatrix, ind_not_missings::IntVector)
+    update_P_post!(P_post_old::Nothing, R_t::UniformScaling{Float64}, status::KalmanStatus, K_t::FloatMatrix, ind_not_missings::IntVector)
+    update_P_post!(P_post_old::SymMatrix, R::SymMatrix, status::KalmanStatus, K_t::FloatMatrix, ind_not_missings::IntVector)
+    update_P_post!(P_post_old::Nothing, R::SymMatrix, status::KalmanStatus, K_t::FloatMatrix, ind_not_missings::IntVector)
 
 Update status.P_post.
 """
-function update_P_post!(P_post_old::SymMatrix, status::KalmanStatus, K_t::FloatMatrix, R_t::SubArray{Float64})
+function update_P_post!(P_post_old::SymMatrix, R_t::UniformScaling{Float64}, status::KalmanStatus, K_t::FloatMatrix, ind_not_missings::IntVector)
     mul!(status.buffer_m_m, status.L, status.P_prior);
     mul!(status.P_post.data, status.buffer_m_m, status.L');
     mul!(status.buffer_m_n_obs, K_t, R_t);
     mul!(status.P_post.data, status.buffer_m_n_obs, K_t', 1.0, 1.0);
 end
 
-function update_P_post!(P_post_old::Nothing, status::KalmanStatus, K_t::FloatMatrix, R_t::SubArray{Float64})
+function update_P_post!(P_post_old::Nothing, R_t::UniformScaling{Float64}, status::KalmanStatus, K_t::FloatMatrix, ind_not_missings::IntVector)
+    mul!(status.buffer_m_m, status.L, status.P_prior);
+    status.P_post = Symmetric(status.buffer_m_m*status.L');
+    mul!(status.buffer_m_n_obs, K_t, R_t);
+    mul!(status.P_post.data, status.buffer_m_n_obs, K_t', 1.0, 1.0);
+end
+
+function update_P_post!(P_post_old::SymMatrix, R::SymMatrix, status::KalmanStatus, K_t::FloatMatrix, ind_not_missings::IntVector)
+    R_t = @view R[ind_not_missings, ind_not_missings];
+    mul!(status.buffer_m_m, status.L, status.P_prior);
+    mul!(status.P_post.data, status.buffer_m_m, status.L');
+    mul!(status.buffer_m_n_obs, K_t, R_t);
+    mul!(status.P_post.data, status.buffer_m_n_obs, K_t', 1.0, 1.0);
+end
+
+function update_P_post!(P_post_old::Nothing, R::SymMatrix, status::KalmanStatus, K_t::FloatMatrix, ind_not_missings::IntVector)
+    R_t = @view R[ind_not_missings, ind_not_missings];
     mul!(status.buffer_m_m, status.L, status.P_prior);
     status.P_post = Symmetric(status.buffer_m_m*status.L');
     mul!(status.buffer_m_n_obs, K_t, R_t);
@@ -224,9 +260,8 @@ Kalman filter a-posteriori update. All measurements are not observed at time t.
 """
 function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::IntVector)
 
-    # Convenient views
+    # Convenient view
     B_t = @view settings.B[ind_not_missings, :];
-    R_t = @view settings.R[ind_not_missings, ind_not_missings];
 
     # Forecast error
     status.e = settings.Y.data[ind_not_missings, status.t];
@@ -237,9 +272,7 @@ function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_mi
     status.buffer_m_n_obs = status.P_prior*B_t';
 
     # Inverse of the forecast error covariance matrix
-    F_t = settings.R[ind_not_missings, ind_not_missings];
-    mul!(F_t, status.buffer_m_n_obs', B_t', 1.0, 1.0);
-    status.inv_F = inv(Symmetric(F_t));
+    update_inv_F!(settings.R, status, B_t, ind_not_missings);
 
     # Kalman gain
     K_t = status.buffer_m_n_obs*status.inv_F;
@@ -253,8 +286,8 @@ function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_mi
     mul!(status.X_post, K_t, status.e, 1.0, 1.0);
 
     # A posteriori estimates: P_post (P_post is updated using the Joseph form)
-    update_P_post!(status.P_post, status, K_t, R_t);
-
+    update_P_post!(status.P_post, settings.R, status, K_t, ind_not_missings);
+    
     # Update log likelihood
     if settings.compute_loglik == true
         update_loglik!(status);

@@ -1,9 +1,10 @@
 """
-    ksettings_input_test(ksettings::KalmanSettings, Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatArray, P0::SymMatrix, DQD::SymMatrix, n::Int64, T::Int64, m::Int64; compute_loglik::Bool=true, store_history::Bool=true)
+    ksettings_input_test(ksettings::KalmanSettings, Y::JArray, B::FloatMatrix, R::Union{UniformScaling{Float64}, SymMatrix}, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatArray, P0::SymMatrix, DQD::SymMatrix, n::Int64, T::Int64, m::Int64; compute_loglik::Bool=true, store_history::Bool=true)
 
 Return true if the entries of ksettings are correct (false otherwise).
 """
-function ksettings_input_test(ksettings::KalmanSettings, Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatArray, P0::SymMatrix, DQD::SymMatrix, n::Int64, T::Int64, m::Int64; compute_loglik::Bool=true, store_history::Bool=true)
+function ksettings_input_test(ksettings::KalmanSettings, Y::JArray, B::FloatMatrix, R::Union{UniformScaling{Float64}, SymMatrix}, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, X0::FloatArray, P0::SymMatrix, DQD::SymMatrix, n::Int64, T::Int64, m::Int64; compute_loglik::Bool=true, store_history::Bool=true)
+    
     return ~(false in [ksettings.Y.data === Y;
                       ksettings.B == B;
                       ksettings.R == R;
@@ -85,11 +86,11 @@ function test_kalman_output(ksettings::KalmanSettings, kstatus::SizedKalmanStatu
 end
 
 """
-    kalman_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, benchmark_data::Tuple)
+    kalman_test(Y::JArray, B::FloatMatrix, R::Union{UniformScaling{Float64}, SymMatrix}, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, benchmark_data::Tuple)
 
 Run a series of tests to check whether the kalman.jl functions work.
 """
-function kalman_test(Y::JArray, B::FloatMatrix, R::SymMatrix, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, benchmark_data::Tuple)
+function kalman_test(Y::JArray, B::FloatMatrix, R::Union{UniformScaling{Float64}, SymMatrix}, C::FloatMatrix, D::FloatMatrix, Q::SymMatrix, benchmark_data::Tuple)
 
     # Benchmark data
     benchmark_n, benchmark_T, benchmark_m, benchmark_X0, benchmark_P0, benchmark_DQD, benchmark_X_prior, benchmark_P_prior, 
@@ -199,6 +200,7 @@ end
 
     # Run tests
     kalman_test(Y, B, R, C, D, Q, benchmark_data);
+    kalman_test(Y, B, 1e-4I, C, D, Q, benchmark_data); # same test with UniformScaling R
 end
 
 @testset "multivariate model" begin
@@ -249,6 +251,7 @@ end
 
     # Run tests
     kalman_test(Y, B, R, C, D, Q, benchmark_data);
+    kalman_test(Y, B, 1e-4I, C, D, Q, benchmark_data); # same test with UniformScaling R
 end
 
 @testset "multivariate model (non-diagonal)" begin
@@ -300,4 +303,5 @@ end
 
     # Run tests
     kalman_test(Y, B, R, C, D, Q, benchmark_data);
+    kalman_test(Y, B, 1e-4I, C, D, Q, benchmark_data); # same test with UniformScaling R
 end
