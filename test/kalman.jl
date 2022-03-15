@@ -199,6 +199,7 @@ end
 
     # Run tests
     kalman_test(Y, B, R, C, D, Q, benchmark_data);
+    kalman_test(Y, B, 1e-4I, C, D, Q, benchmark_data); # same test with UniformScaling R
 end
 
 @testset "multivariate model" begin
@@ -249,6 +250,7 @@ end
 
     # Run tests
     kalman_test(Y, B, R, C, D, Q, benchmark_data);
+    kalman_test(Y, B, 1e-4I, C, D, Q, benchmark_data); # same test with UniformScaling R
 end
 
 @testset "multivariate model (non-diagonal)" begin
@@ -300,4 +302,5 @@ end
 
     # Run tests
     kalman_test(Y, B, R, C, D, Q, benchmark_data);
+    kalman_test(Y, B, 1e-4I, C, D, Q, benchmark_data); # same test with UniformScaling R
 end
