@@ -354,6 +354,26 @@ standardise(X::JVector{Float64}) = (X .- mean_skipmissing(X))./std_skipmissing(X
 standardise(X::JMatrix{Float64}) = (X .- mean_skipmissing(X))./std_skipmissing(X);
 
 """
+    diff2(A::AbstractArray, dims::Integer)
+
+Return double-differenced data.
+"""
+diff2(A::AbstractArray; dims::Integer) = diff(diff(A, dims=dims), dims=dims);
+
+"""
+    diff_or_diff2(A::AbstractArray, dims::Integer, use_diff::Bool)
+
+Use either diff or diff2 depending on the value taken by `use_diff`.
+"""
+function diff_or_diff2(A::AbstractArray, dims::Integer, use_diff::Bool)
+    if use_diff
+        return diff(A, dims=dims);
+    else
+        return diff2(A, dims=dims);
+    end
+end
+
+"""
     interpolate_series(X::JMatrix{Float64}, n::Int64, T::Int64)
 
 Interpolate each series in `X`, in turn, by replacing missing observations with the sample average of the non-missing values.
