@@ -41,6 +41,8 @@ sum_skipmissing
 ```@docs
 companion_form
 lag
+diff2
+diff_or_diff2
 ```
 
 ### Interpolation and moving averages
