@@ -294,8 +294,6 @@ function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_mi
     end
 end
 
-aposteriori!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::IntVector) = aposteriori!(settings, status.online_status, ind_not_missings);
-
 function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing)
     status.X_post = copy(status.X_prior);
     status.P_post = copy(status.P_prior);
@@ -304,7 +302,19 @@ function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_mi
     status.L = Matrix(1.0I, settings.m, settings.m);
 end
 
-aposteriori!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::Nothing) = aposteriori!(settings, status.online_status, ind_not_missings);
+aposteriori!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::Union{IntVector, Nothing}) = aposteriori!(settings, status.online_status, ind_not_missings);
+
+"""
+    call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::SymMatrix, ind_not_missings::Union{IntVector, Nothing})
+
+Call standard aposteriori!(...) routine.
+
+    call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::UniformScaling{Float64}, ind_not_missings::Union{IntVector, Nothing})
+
+Call aposteriori_sequential!(...) for sequential a-posteriori update.
+"""
+call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::SymMatrix, ind_not_missings::Union{IntVector, Nothing}) = aposteriori!(settings, status, ind_not_missings);
+call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::UniformScaling{Float64}, ind_not_missings::Union{IntVector, Nothing}) = aposteriori_sequential!(settings, status, ind_not_missings);
 
 """
     update_status_history!(settings::KalmanSettings, status::OnlineKalmanStatus)
@@ -358,7 +368,7 @@ function kfilter!(settings::KalmanSettings, status::KalmanStatus)
     ind_not_missings = find_observed_data(settings, status);
 
     # Ex-post update
-    aposteriori!(settings, status, ind_not_missings);
+    call_aposteriori!(settings, status, settings.R, ind_not_missings);
 
     # Update `status.history_*`
     update_status_history!(settings, status);
