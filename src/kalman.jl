@@ -168,15 +168,21 @@ function find_observed_data(settings::KalmanSettings, t::Int64)
 end
 
 """
-    update_inv_F!(R::UniformScaling{Float64}, status::KalmanStatus, B_t::SubArray{Float64}, ind_not_missings::IntVector)
+    update_inv_F!(R::UniformScaling{Float64}, status::KalmanStatus, B_it::SubArray{Float64})
+
+Update status.inv_F when using the sequential processing approach.
+
+# Notes
+- `B_it` is a (mx1) column vector.
+
     update_inv_F!(R::SymMatrix, status::KalmanStatus, B_t::SubArray{Float64}, ind_not_missings::IntVector)
 
 Update status.inv_F.
 """
-function update_inv_F!(R::UniformScaling{Float64}, status::KalmanStatus, B_t::SubArray{Float64}, ind_not_missings::IntVector)
-    F_t = status.buffer_m_n_obs'*B_t'; # I cannot use mul!(...) here since R is UniformScaling{Float64}
+function update_inv_F!(R::UniformScaling{Float64}, status::KalmanStatus, B_it::SubArray{Float64})
+    F_t = status.buffer_m_n_obs'*B_it; # I cannot use mul!(...) here since R is UniformScaling{Float64}
     F_t += R;
-    status.inv_F = inv(Symmetric(F_t));
+    status.inv_F = 1/F_t; # this is a scalar
 end
 
 function update_inv_F!(R::SymMatrix, status::KalmanStatus, B_t::SubArray{Float64}, ind_not_missings::IntVector)
@@ -318,7 +324,7 @@ The update for the covariance matrix is implemented by using the Joseph's stabil
 - `ind_not_missings`: Position of the observed measurements
 
 # Notes
-The sequential processing (Anderson and Moore, 1979, section 6.4) employed in this function is also described as the univariate form of the Kalman filter (e.g., Durbin and Koopman, 2000).
+- The sequential processing (Anderson and Moore, 1979, section 6.4) employed in this function is also described as the univariate form of the Kalman filter (e.g., Durbin and Koopman, 2000).
 
     aposteriori_sequential!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing)
     aposteriori_sequential!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::Nothing)
@@ -331,10 +337,47 @@ Kalman filter a-priori prediction for sequential processing. All measurements ar
 - `ind_not_missings`: Empty array
 
 # Notes
-The sequential processing (Anderson and Moore, 1979, section 6.4) employed in this function is also described as the univariate form of the Kalman filter (e.g., Durbin and Koopman, 2000).
+- The sequential processing (Anderson and Moore, 1979, section 6.4) employed in this function is also described as the univariate form of the Kalman filter (e.g., Durbin and Koopman, 2000).
 """
-aposteriori_sequential!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::IntVector) = nothing;
-aposteriori_sequential!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing) = nothing;
+function aposteriori_sequential!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::IntVector)
+
+    # Initialise sequential processing to the latest a-priori prediction
+    # TBD: avoid this copy by using an appropriate if-else statement in the loop
+    status.X_post = copy(status.X_prior);
+    status.P_post = copy(status.P_prior);
+
+    # Sequentially process the observables
+    for i in ind_not_missings
+
+        # Convenient view
+        B_it = @view settings.B[i, :]; # this is (mx1) vector <- the use of an adjoint of a view would increase the number of operations required to finalise the a-posteriori update (too many adjoint calls)
+        
+        # Forecast error
+        status.e = settings.Y.data[i, status.t] - B_it'*status.X_post; # I cannot use mul!(...) here since status.e is a scalar
+
+        # Convenient shortcut for the forecast error covariance matrix and Kalman gain
+        # The line below initialises `status.buffer_m_n_obs` for the current series and point in time
+        status.buffer_m_n_obs = status.P_post*B_it; # this is a (mx1) vector
+
+        # Inverse of the forecast error covariance matrix
+        update_inv_F!(settings.R, status, B_it, ind_not_missings);
+
+        # Kalman gain
+        K_it = status.buffer_m_n_obs*status.inv_F;
+
+        # Convenient shortcut for the Joseph form and needed statistics for the Kalman smoother
+        status.L = Matrix(1.0I, settings.m, settings.m);
+        mul!(status.L, K_it, B_it', -1.0, 1.0);
+
+        # A posteriori estimates: X_post
+        status.X_post += K_it*status.e; # I cannot use mul!(...) here since status.e is a scalar
+
+        # A posteriori estimates: P_post (P_post is updated using the Joseph form)
+        #update_P_post!(status.P_post, settings.R, status, K_t, ind_not_missings);
+    end
+end
+
+aposteriori_sequential!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing) = nothing; # TBC: this may be just a call to the equivalent version of aposteriori!(...)
 aposteriori_sequential!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::Union{IntVector, Nothing}) = aposteriori_sequential!(settings, status.online_status, ind_not_missings);
 
 """
