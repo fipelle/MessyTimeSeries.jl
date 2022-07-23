@@ -251,7 +251,7 @@ The update for the covariance matrix is implemented by using the Joseph's stabil
     aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing)
     aposteriori!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::Nothing)
 
-Kalman filter a-posteriori update. All measurements are not observed at time t.
+Kalman filter a-priori prediction. All measurements are not observed at time t.
 
 # Arguments
 - `settings`: KalmanSettings struct
@@ -303,6 +303,39 @@ function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_mi
 end
 
 aposteriori!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::Union{IntVector, Nothing}) = aposteriori!(settings, status.online_status, ind_not_missings);
+
+"""
+    aposteriori_sequential!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::IntVector)
+    aposteriori_sequential!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::IntVector)
+
+Sequential Kalman filter a-posteriori update. Measurements are observed (or partially observed) at time t.
+
+The update for the covariance matrix is implemented by using the Joseph's stabilised form (Bucy and Joseph, 1968).
+
+# Arguments
+- `settings`: KalmanSettings struct
+- `status`: KalmanStatus struct
+- `ind_not_missings`: Position of the observed measurements
+
+# Notes
+The sequential processing (Anderson and Moore, 1979, section 6.4) employed in this function is also described as the univariate form of the Kalman filter (e.g., Durbin and Koopman, 2000).
+
+    aposteriori_sequential!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing)
+    aposteriori_sequential!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::Nothing)
+
+Kalman filter a-priori prediction for sequential processing. All measurements are not observed at time t.
+
+# Arguments
+- `settings`: KalmanSettings struct
+- `status`: KalmanStatus struct
+- `ind_not_missings`: Empty array
+
+# Notes
+The sequential processing (Anderson and Moore, 1979, section 6.4) employed in this function is also described as the univariate form of the Kalman filter (e.g., Durbin and Koopman, 2000).
+"""
+aposteriori_sequential!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::IntVector) = nothing;
+aposteriori_sequential!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing) = nothing;
+aposteriori_sequential!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::Union{IntVector, Nothing}) = aposteriori_sequential!(settings, status.online_status, ind_not_missings);
 
 """
     call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::SymMatrix, ind_not_missings::Union{IntVector, Nothing})
