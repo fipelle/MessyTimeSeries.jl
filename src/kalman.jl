@@ -180,9 +180,11 @@ Update status.inv_F when using the sequential processing approach.
 Update status.inv_F.
 """
 function update_inv_F!(R::UniformScaling{Float64}, status::KalmanStatus, B_it::SubArray{Float64})
-    F_t = status.buffer_m_n_obs'*B_it; # I cannot use mul!(...) here since R is UniformScaling{Float64}
-    F_t += R;
-    status.inv_F = 1/F_t; # this is a scalar
+    F_it = status.buffer_m_n_obs'*B_it; # I cannot use mul!(...) here since R is UniformScaling{Float64}
+    F_it += R;
+    @infiltrate
+
+    push!(status.inv_F, 1/F_it); # 1/F_it is a scalar
 end
 
 function update_inv_F!(R::SymMatrix, status::KalmanStatus, B_t::SubArray{Float64}, ind_not_missings::IntVector)
@@ -200,9 +202,16 @@ Update status.P_post.
 """
 function update_P_post!(status::KalmanStatus, K_it::FloatMatrix, R_it::UniformScaling{Float64}, ind_not_missings::IntVector)
     mul!(status.buffer_m_m, status.L, status.P_post);
+    @infiltrate
+
     mul!(status.P_post.data, status.buffer_m_m, status.L');
+    @infiltrate
+
     mul!(status.buffer_m_n_obs, K_it, R_it);
+    @infiltrate
+
     mul!(status.P_post.data, status.buffer_m_n_obs, K_it', 1.0, 1.0);
+    @infiltrate
 end
 
 function update_P_post!(P_post_old::SymMatrix, R::SymMatrix, status::KalmanStatus, K_t::FloatMatrix, ind_not_missings::IntVector)
@@ -338,6 +347,11 @@ function aposteriori_sequential!(settings::KalmanSettings, status::KalmanStatus,
     status.X_post = copy(status.X_prior);
     status.P_post = copy(status.P_prior);
 
+    # Initialise key terms
+    status.e = Float64[];
+    status.inv_F = Float64[];
+    @infiltrate
+
     # Sequentially process the observables
     for i in ind_not_missings
 
@@ -345,27 +359,34 @@ function aposteriori_sequential!(settings::KalmanSettings, status::KalmanStatus,
         B_it = @view settings.B[i, :]; # this is (mx1) vector <- the use of an adjoint of a view would increase the number of operations required to finalise the a-posteriori update (too many adjoint calls)
         
         # Forecast error
-        status.e = settings.Y.data[i, status.t] - B_it'*status.X_post; # I cannot use mul!(...) here since status.e is a scalar
+        push!(status.e, settings.Y.data[i, status.t] - B_it'*status.X_post); # I cannot use mul!(...) here since I am updating status.e element-wise
+        @infiltrate
 
         # Convenient shortcut for the forecast error covariance matrix and Kalman gain
         # The line below initialises `status.buffer_m_n_obs` for the current series and point in time
         status.buffer_m_n_obs = status.P_post*B_it; # this is a (mx1) vector
+        @infiltrate
 
         # Inverse of the forecast error covariance matrix
-        update_inv_F!(settings.R, status, B_it, ind_not_missings);
+        update_inv_F!(settings.R, status, B_it);
+        @infiltrate
 
         # Kalman gain
-        K_it = status.buffer_m_n_obs*status.inv_F;
+        K_it = status.buffer_m_n_obs*status.inv_F[end];
+        @infiltrate
 
         # Convenient shortcut for the Joseph form and needed statistics for the Kalman smoother
         status.L = Matrix(1.0I, settings.m, settings.m);
         mul!(status.L, K_it, B_it', -1.0, 1.0);
+        @infiltrate
 
         # A posteriori estimates: X_post
-        status.X_post += K_it*status.e; # I cannot use mul!(...) here since status.e is a scalar
+        status.X_post += K_it*status.e[end]; # I cannot use mul!(...) here since status.e[end] is a scalar
+        @infiltrate
 
         # A posteriori estimates: P_post (P_post is updated using the Joseph form)
         update_P_post!(status, K_it, settings.R, ind_not_missings);
+        @infiltrate
     end
 end
 

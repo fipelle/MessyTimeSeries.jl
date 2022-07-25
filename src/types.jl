@@ -209,7 +209,7 @@ mutable struct OnlineKalmanStatus <: KalmanStatus
     buffer_J1::Union{FloatVector, Nothing}
     buffer_J2::Union{FloatMatrix, Nothing}
     buffer_m_m::Union{FloatMatrix, Nothing}
-    buffer_m_n_obs::Union{FloatMatrix, Nothing}
+    buffer_m_n_obs::Union{FloatArray, Nothing}
 end
 
 """
@@ -258,7 +258,7 @@ mutable struct DynamicKalmanStatus <: KalmanStatus
     buffer_J1::Union{FloatVector, Nothing}
     buffer_J2::Union{FloatMatrix, Nothing}
     buffer_m_m::Union{FloatMatrix, Nothing}
-    buffer_m_n_obs::Union{FloatMatrix, Nothing}
+    buffer_m_n_obs::Union{FloatArray, Nothing}
     history_X_prior::Union{Array{FloatVector,1}, Nothing}
     history_X_post::Union{Array{FloatVector,1}, Nothing}
     history_P_prior::Union{Array{SymMatrix,1}, Nothing}
