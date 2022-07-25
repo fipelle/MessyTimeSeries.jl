@@ -231,15 +231,24 @@ function update_P_post!(P_post_old::Nothing, R::SymMatrix, status::KalmanStatus,
 end
 
 """
-    update_loglik!(status::KalmanStatus)
+    update_loglik!(status::KalmanStatus, R::SymMatrix)
 
 Update status.loglik.
 
+    update_loglik!(status::KalmanStatus, R::UniformScaling{Float64})
+
+Update status.loglik using the sequential approach.
+
 # Arguments
 - `status`: KalmanStatus struct
+- `R`: Covariance matrix of the measurement equations' error terms
 """
-function update_loglik!(status::KalmanStatus)
+function update_loglik!(status::KalmanStatus, R::SymMatrix)
     status.loglik -= 0.5*(-logdet(status.inv_F) + status.e'*status.inv_F*status.e);
+end
+
+function update_loglik!(status::KalmanStatus, R::UniformScaling{Float64})
+    status.loglik -= 0.5*(log(1)-log(status.inv_F[end]) + status.e[end]^2*status.inv_F[end]);
 end
 
 """
@@ -297,7 +306,7 @@ function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_mi
     
     # Update log likelihood
     if settings.compute_loglik == true
-        update_loglik!(status);
+        update_loglik!(status, settings.R);
     end
 end
 
@@ -383,16 +392,16 @@ function aposteriori_sequential!(settings::KalmanSettings, status::KalmanStatus,
         # A posteriori estimates: X_post
         status.X_post += K_it*status.e[end]; # I cannot use mul!(...) here since status.e[end] is a scalar
         @infiltrate
-
+        
         # A posteriori estimates: P_post (P_post is updated using the Joseph form)
         update_P_post!(status, K_it, settings.R);
         @infiltrate
-
-        # ========================
+        
         # Update log likelihood
-        # ========================
-        # => TBA
-        # ========================
+        if settings.compute_loglik == true
+            update_loglik!(status, settings.R);
+        end
+        @infiltrate
     end
 end
 
