@@ -332,7 +332,8 @@ function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_mi
     status.L = Matrix(1.0I, settings.m, settings.m);
 end
 
-aposteriori!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::Union{IntVector, Nothing}) = aposteriori!(settings, status.online_status, ind_not_missings);
+aposteriori!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::IntVector) = aposteriori!(settings, status.online_status, ind_not_missings);
+aposteriori!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::Nothing) = aposteriori!(settings, status.online_status, ind_not_missings);
 
 """
     aposteriori_sequential!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::IntVector)
@@ -420,7 +421,8 @@ function aposteriori_sequential!(settings::KalmanSettings, status::KalmanStatus,
     status.L = Vector{FloatMatrix}();
 end
 
-aposteriori_sequential!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::Union{IntVector, Nothing}) = aposteriori_sequential!(settings, status.online_status, ind_not_missings);
+aposteriori_sequential!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::IntVector) = aposteriori_sequential!(settings, status.online_status, ind_not_missings);
+aposteriori_sequential!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::Nothing) = aposteriori_sequential!(settings, status.online_status, ind_not_missings);
 
 """
     call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::SymMatrix, ind_not_missings::Union{IntVector, Nothing})
