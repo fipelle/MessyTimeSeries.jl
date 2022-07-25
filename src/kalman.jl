@@ -196,19 +196,15 @@ function update_inv_F!(R::SymMatrix, status::KalmanStatus, B_t::SubArray{Float64
 end
 
 """
-    update_P_post!(status::KalmanStatus, K_it::FloatMatrix, R_it::UniformScaling{Float64}, ind_not_missings::IntVector)
     update_P_post!(P_post_old::SymMatrix, R::SymMatrix, status::KalmanStatus, K_t::FloatMatrix, ind_not_missings::IntVector)
     update_P_post!(P_post_old::Nothing, R::SymMatrix, status::KalmanStatus, K_t::FloatMatrix, ind_not_missings::IntVector)
 
-Update status.P_post.
-"""
-function update_P_post!(status::KalmanStatus, K_it::FloatVector, R_it::UniformScaling{Float64})
-    mul!(status.buffer_m_m, status.L, status.P_post);
-    mul!(status.P_post.data, status.buffer_m_m, status.L');
-    status.buffer_m_n_obs = K_it*R_it; # I cannot use mul!(...) here due to the type of K_it and R_it
-    mul!(status.P_post.data, status.buffer_m_n_obs, K_it', 1.0, 1.0);
-end
+Update `status.P_post`.
 
+    update_P_post!(status::KalmanStatus, K_it::FloatVector, L_it::FloatMatrix, R_it::UniformScaling{Float64})
+
+Update `status.P_post` using the sequential approach.
+"""
 function update_P_post!(P_post_old::SymMatrix, R::SymMatrix, status::KalmanStatus, K_t::FloatMatrix, ind_not_missings::IntVector)
     R_t = @view R[ind_not_missings, ind_not_missings];
     mul!(status.buffer_m_m, status.L, status.P_prior);
@@ -223,6 +219,13 @@ function update_P_post!(P_post_old::Nothing, R::SymMatrix, status::KalmanStatus,
     status.P_post = Symmetric(status.buffer_m_m*status.L');
     mul!(status.buffer_m_n_obs, K_t, R_t);
     mul!(status.P_post.data, status.buffer_m_n_obs, K_t', 1.0, 1.0);
+end
+
+function update_P_post!(status::KalmanStatus, K_it::FloatVector, L_it::FloatMatrix, R_it::UniformScaling{Float64})
+    mul!(status.buffer_m_m, L_it, status.P_post);
+    mul!(status.P_post.data, status.buffer_m_m, L_it');
+    status.buffer_m_n_obs = K_it*R_it; # I cannot use mul!(...) here due to the type of K_it and R_it
+    mul!(status.P_post.data, status.buffer_m_n_obs, K_it', 1.0, 1.0);
 end
 
 """
@@ -376,15 +379,15 @@ function aposteriori_sequential!(settings::KalmanSettings, status::KalmanStatus,
         K_it = status.buffer_m_n_obs*status.inv_F[end];
 
         # Convenient shortcut for the Joseph form and needed statistics for the Kalman smoother
-        status.L = Matrix(1.0I, settings.m, settings.m);
-        mul!(status.L, K_it, B_it', -1.0, 1.0);
-
+        L_it = Matrix(1.0I, settings.m, settings.m);
+        mul!(L_it, K_it, B_it', -1.0, 1.0);
+        
         # A posteriori estimates: X_post
         status.X_post += K_it*status.e[end]; # I cannot use mul!(...) here since status.e[end] is a scalar
         
         # A posteriori estimates: P_post (P_post is updated using the Joseph form)
-        update_P_post!(status, K_it, settings.R);
-        
+        update_P_post!(status, K_it, L_it, settings.R);
+
         # Update log likelihood
         if settings.compute_loglik == true
             update_loglik!(status, settings.R);
