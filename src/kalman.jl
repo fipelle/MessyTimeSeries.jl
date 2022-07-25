@@ -200,14 +200,14 @@ end
 
 Update status.P_post.
 """
-function update_P_post!(status::KalmanStatus, K_it::FloatMatrix, R_it::UniformScaling{Float64}, ind_not_missings::IntVector)
+function update_P_post!(status::KalmanStatus, K_it::FloatVector, R_it::UniformScaling{Float64})
     mul!(status.buffer_m_m, status.L, status.P_post);
     @infiltrate
 
     mul!(status.P_post.data, status.buffer_m_m, status.L');
     @infiltrate
 
-    mul!(status.buffer_m_n_obs, K_it, R_it);
+    status.buffer_m_n_obs = K_it*R_it; # I cannot use mul!(...) here due to the type of K_it and R_it
     @infiltrate
 
     mul!(status.P_post.data, status.buffer_m_n_obs, K_it', 1.0, 1.0);
@@ -385,8 +385,14 @@ function aposteriori_sequential!(settings::KalmanSettings, status::KalmanStatus,
         @infiltrate
 
         # A posteriori estimates: P_post (P_post is updated using the Joseph form)
-        update_P_post!(status, K_it, settings.R, ind_not_missings);
+        update_P_post!(status, K_it, settings.R);
         @infiltrate
+
+        # ========================
+        # Update log likelihood
+        # ========================
+        # => TBA
+        # ========================
     end
 end
 

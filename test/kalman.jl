@@ -136,7 +136,7 @@ function kalman_test(Y::JArray, B::FloatMatrix, R::Union{UniformScaling{Float64}
         ksettings = ksettings5;
 
         # Initialise kstatus
-        for kstatus in [DynamicKalmanStatus(), SizedKalmanStatus(size(Y,2))]
+        for kstatus in [DynamicKalmanStatus(), SizedKalmanStatus(ksettings)]
 
             test_kalman_output(ksettings, kstatus, benchmark_data);
 
