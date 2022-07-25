@@ -204,7 +204,7 @@ mutable struct OnlineKalmanStatus <: KalmanStatus
     P_prior::Union{SymMatrix, Nothing}
     P_post::Union{SymMatrix, Nothing}
     e::Union{FloatVector, Nothing}
-    inv_F::Union{SymMatrix, Nothing}
+    inv_F::Union{SymMatrix, FloatVector, Nothing}
     L::Union{FloatMatrix, Nothing}
     buffer_J1::Union{FloatVector, Nothing}
     buffer_J2::Union{FloatMatrix, Nothing}
@@ -253,7 +253,7 @@ mutable struct DynamicKalmanStatus <: KalmanStatus
     P_prior::Union{SymMatrix, Nothing}
     P_post::Union{SymMatrix, Nothing}
     e::Union{FloatVector, Nothing}
-    inv_F::Union{SymMatrix, Nothing}
+    inv_F::Union{SymMatrix, FloatVector, Nothing}
     L::Union{FloatMatrix, Nothing}
     buffer_J1::Union{FloatVector, Nothing}
     buffer_J2::Union{FloatMatrix, Nothing}
@@ -264,7 +264,7 @@ mutable struct DynamicKalmanStatus <: KalmanStatus
     history_P_prior::Union{Array{SymMatrix,1}, Nothing}
     history_P_post::Union{Array{SymMatrix,1}, Nothing}
     history_e::Union{Array{FloatVector,1}, Nothing}
-    history_inv_F::Union{Array{SymMatrix,1}, Nothing}
+    history_inv_F::Union{Array{SymMatrix,1}, Array{FloatVector,1}, Nothing}
     history_L::Union{Array{FloatMatrix,1}, Nothing}
 end
 
@@ -299,7 +299,7 @@ struct SizedKalmanStatus <: KalmanStatus
     history_P_prior::Array{SymMatrix,1}
     history_P_post::Array{SymMatrix,1}
     history_e::Array{FloatVector,1}
-    history_inv_F::Array{SymMatrix,1}
+    history_inv_F::Union{Array{SymMatrix,1}, Array{FloatVector,1}}
     history_L::Array{FloatMatrix,1}
 end
 
