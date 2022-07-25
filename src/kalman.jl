@@ -63,29 +63,31 @@ function initialise_status_history!(settings::KalmanSettings, status::OnlineKalm
 end
 
 function initialise_status_history!(settings::KalmanSettings, status::DynamicKalmanStatus, R::SymMatrix)
-    status.history_X_prior = Array{FloatVector,1}();
-    status.history_X_post = Array{FloatVector,1}();
-    status.history_P_prior = Array{SymMatrix,1}();
-    status.history_P_post = Array{SymMatrix,1}();
-    status.history_e = Array{FloatVector,1}();
-    status.history_inv_F = Array{SymMatrix,1}();
-    status.history_L = Array{FloatMatrix,1}();
+    if settings.store_history == true
+        status.history_X_prior = Array{FloatVector,1}();
+        status.history_X_post = Array{FloatVector,1}();
+        status.history_P_prior = Array{SymMatrix,1}();
+        status.history_P_post = Array{SymMatrix,1}();
+        status.history_e = Array{FloatVector,1}();
+        status.history_inv_F = Array{SymMatrix,1}();
+        status.history_L = Array{FloatMatrix,1}();
+    end
 end
 
 function initialise_status_history!(settings::KalmanSettings, status::DynamicKalmanStatus, R::UniformScaling{Float64})
-    status.history_X_prior = Array{FloatVector,1}();
-    status.history_X_post = Array{FloatVector,1}();
-    status.history_P_prior = Array{SymMatrix,1}();
-    status.history_P_post = Array{SymMatrix,1}();
-    status.history_e = Array{FloatVector,1}();
-    status.history_inv_F = Array{FloatVector,1}();
-    status.history_L = Array{Vector{FloatMatrix},1}();
+    if settings.store_history == true
+        status.history_X_prior = Array{FloatVector,1}();
+        status.history_X_post = Array{FloatVector,1}();
+        status.history_P_prior = Array{SymMatrix,1}();
+        status.history_P_post = Array{SymMatrix,1}();
+        status.history_e = Array{FloatVector,1}();
+        status.history_inv_F = Array{FloatVector,1}();
+        status.history_L = Array{Vector{FloatMatrix},1}();
+    end
 end
 
 function initialise_status_history!(settings::KalmanSettings, status::DynamicKalmanStatus)
-    if settings.store_history == true
-        initialise_status_history!(settings, status, settings.R);
-    end
+    initialise_status_history!(settings, status, settings.R);
 end
 
 function initialise_status_history!(settings::KalmanSettings, status::SizedKalmanStatus)
