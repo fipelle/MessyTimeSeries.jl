@@ -327,7 +327,7 @@ function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_mi
     # A-posteriori equivalent to a-priori in this case since no new data is observed
     status.X_post = copy(status.X_prior);
     status.P_post = copy(status.P_prior);
-    status.e = zeros(1);
+    status.e = Float64[];
     status.inv_F = Symmetric(zeros(1,1));
     status.L = Matrix(1.0I, settings.m, settings.m);
 end
@@ -410,7 +410,16 @@ function aposteriori_sequential!(settings::KalmanSettings, status::KalmanStatus,
     end
 end
 
-aposteriori_sequential!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing) = nothing; # TBC: this may be just a call to the equivalent version of aposteriori!(...)
+function aposteriori_sequential!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing)
+
+    # A-posteriori equivalent to a-priori in this case since no new data is observed
+    status.X_post = copy(status.X_prior);
+    status.P_post = copy(status.P_prior);
+    status.e = Float64[];
+    status.inv_F = Float64[];
+    status.L = Vector{FloatMatrix}();
+end
+
 aposteriori_sequential!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::Union{IntVector, Nothing}) = aposteriori_sequential!(settings, status.online_status, ind_not_missings);
 
 """
