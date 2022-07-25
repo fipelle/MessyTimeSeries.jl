@@ -205,7 +205,7 @@ mutable struct OnlineKalmanStatus <: KalmanStatus
     P_post::Union{SymMatrix, Nothing}
     e::Union{FloatVector, Nothing}
     inv_F::Union{SymMatrix, FloatVector, Nothing}
-    L::Union{FloatMatrix, Nothing}
+    L::Union{FloatMatrix, Vector{FloatMatrix}, Nothing}
     buffer_J1::Union{FloatVector, Nothing}
     buffer_J2::Union{FloatMatrix, Nothing}
     buffer_m_m::Union{FloatMatrix, Nothing}
@@ -254,7 +254,7 @@ mutable struct DynamicKalmanStatus <: KalmanStatus
     P_post::Union{SymMatrix, Nothing}
     e::Union{FloatVector, Nothing}
     inv_F::Union{SymMatrix, FloatVector, Nothing}
-    L::Union{FloatMatrix, Nothing}
+    L::Union{FloatMatrix, Vector{FloatMatrix}, Nothing}
     buffer_J1::Union{FloatVector, Nothing}
     buffer_J2::Union{FloatMatrix, Nothing}
     buffer_m_m::Union{FloatMatrix, Nothing}
@@ -265,7 +265,7 @@ mutable struct DynamicKalmanStatus <: KalmanStatus
     history_P_post::Union{Array{SymMatrix,1}, Nothing}
     history_e::Union{Array{FloatVector,1}, Nothing}
     history_inv_F::Union{Array{SymMatrix,1}, Array{FloatVector,1}, Nothing}
-    history_L::Union{Array{FloatMatrix,1}, Nothing}
+    history_L::Union{Array{FloatMatrix,1}, Array{Vector{FloatMatrix},1}, Nothing}
 end
 
 """
@@ -300,7 +300,7 @@ struct SizedKalmanStatus <: KalmanStatus
     history_P_post::Array{SymMatrix,1}
     history_e::Array{FloatVector,1}
     history_inv_F::Union{Array{SymMatrix,1}, Array{FloatVector,1}}
-    history_L::Array{FloatMatrix,1}
+    history_L::Union{Array{FloatMatrix,1}, Array{Vector{FloatMatrix},1}}
 end
 
 """
@@ -328,7 +328,7 @@ function SizedKalmanStatus(R::UniformScaling{Float64}, T::Int64)
     history_P_post = Array{SymMatrix,1}(undef, T);
     history_e = Array{FloatVector,1}(undef, T);
     history_inv_F = Array{FloatVector,1}(undef, T);
-    history_L = Array{FloatMatrix,1}(undef, T);
+    history_L = Array{Vector{FloatMatrix},1}(undef, T);
     return SizedKalmanStatus(OnlineKalmanStatus(), T, history_X_prior, history_X_post, history_P_prior, history_P_post, history_e, history_inv_F, history_L);
 end
 

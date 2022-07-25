@@ -358,7 +358,8 @@ function aposteriori_sequential!(settings::KalmanSettings, status::KalmanStatus,
     # Initialise key terms
     status.e = Float64[];
     status.inv_F = Float64[];
-
+    status.L = Vector{FloatMatrix}();
+    
     # Sequentially process the observables
     for i in ind_not_missings
 
@@ -379,15 +380,16 @@ function aposteriori_sequential!(settings::KalmanSettings, status::KalmanStatus,
         K_it = status.buffer_m_n_obs*status.inv_F[end];
 
         # Convenient shortcut for the Joseph form and needed statistics for the Kalman smoother
-        L_it = Matrix(1.0I, settings.m, settings.m);
-        mul!(L_it, K_it, B_it', -1.0, 1.0);
-        
+        push!(status.L, Matrix(1.0I, settings.m, settings.m));
+        mul!(status.L[end], K_it, B_it', -1.0, 1.0);
+        @infiltrate
+
         # A posteriori estimates: X_post
         status.X_post += K_it*status.e[end]; # I cannot use mul!(...) here since status.e[end] is a scalar
         
         # A posteriori estimates: P_post (P_post is updated using the Joseph form)
-        update_P_post!(status, K_it, L_it, settings.R);
-
+        update_P_post!(status, K_it, status.L[end], settings.R);
+        
         # Update log likelihood
         if settings.compute_loglik == true
             update_loglik!(status, settings.R);
