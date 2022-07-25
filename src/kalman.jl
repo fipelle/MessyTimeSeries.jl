@@ -62,15 +62,29 @@ function initialise_status_history!(settings::KalmanSettings, status::OnlineKalm
     end
 end
 
+function initialise_status_history!(settings::KalmanSettings, status::DynamicKalmanStatus, R::SymMatrix)
+    status.history_X_prior = Array{FloatVector,1}();
+    status.history_X_post = Array{FloatVector,1}();
+    status.history_P_prior = Array{SymMatrix,1}();
+    status.history_P_post = Array{SymMatrix,1}();
+    status.history_e = Array{FloatVector,1}();
+    status.history_inv_F = Array{SymMatrix,1}();
+    status.history_L = Array{FloatMatrix,1}();
+end
+
+function initialise_status_history!(settings::KalmanSettings, status::DynamicKalmanStatus, R::UniformScaling{Float64})
+    status.history_X_prior = Array{FloatVector,1}();
+    status.history_X_post = Array{FloatVector,1}();
+    status.history_P_prior = Array{SymMatrix,1}();
+    status.history_P_post = Array{SymMatrix,1}();
+    status.history_e = Array{FloatVector,1}();
+    status.history_inv_F = Array{FloatVector,1}();
+    status.history_L = Array{Vector{FloatMatrix},1}();
+end
+
 function initialise_status_history!(settings::KalmanSettings, status::DynamicKalmanStatus)
     if settings.store_history == true
-        status.history_X_prior = Array{FloatVector,1}();
-        status.history_X_post = Array{FloatVector,1}();
-        status.history_P_prior = Array{SymMatrix,1}();
-        status.history_P_post = Array{SymMatrix,1}();
-        status.history_e = Array{FloatVector,1}();
-        status.history_inv_F = Array{SymMatrix,1}();
-        status.history_L = Array{FloatMatrix,1}();
+        initialise_status_history!(settings, status, settings.R);
     end
 end
 
@@ -382,7 +396,6 @@ function aposteriori_sequential!(settings::KalmanSettings, status::KalmanStatus,
         # Convenient shortcut for the Joseph form and needed statistics for the Kalman smoother
         push!(status.L, Matrix(1.0I, settings.m, settings.m));
         mul!(status.L[end], K_it, B_it', -1.0, 1.0);
-        @infiltrate
 
         # A posteriori estimates: X_post
         status.X_post += K_it*status.e[end]; # I cannot use mul!(...) here since status.e[end] is a scalar
