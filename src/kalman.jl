@@ -247,6 +247,37 @@ function update_loglik!(status::KalmanStatus, R::UniformScaling{Float64})
 end
 
 """
+    update_status_history!(settings::KalmanSettings, status::OnlineKalmanStatus)
+    update_status_history!(settings::KalmanSettings, status::DynamicKalmanStatus)
+    update_status_history!(settings::KalmanSettings, status::SizedKalmanStatus)
+
+Update the `status.history_*` arrays with a new entry, when needed.
+"""
+update_status_history!(settings::KalmanSettings, status::OnlineKalmanStatus) = nothing;
+
+function update_status_history!(settings::KalmanSettings, status::DynamicKalmanStatus)
+    if settings.store_history == true
+        push!(status.history_X_prior, status.X_prior);
+        push!(status.history_X_post, status.X_post);
+        push!(status.history_P_prior, status.P_prior);
+        push!(status.history_P_post, status.P_post);
+        push!(status.history_e, status.e);
+        push!(status.history_inv_F, status.inv_F);
+        push!(status.history_L, status.L);
+    end
+end
+
+function update_status_history!(settings::KalmanSettings, status::SizedKalmanStatus)
+    status.history_X_prior[status.online_status.t] = status.online_status.X_prior;
+    status.history_X_post[status.online_status.t] = status.online_status.X_post;
+    status.history_P_prior[status.online_status.t] = status.online_status.P_prior;
+    status.history_P_post[status.online_status.t] = status.online_status.P_post;
+    status.history_e[status.online_status.t] = status.online_status.e;
+    status.history_inv_F[status.online_status.t] = status.online_status.inv_F;
+    status.history_L[status.online_status.t] = status.online_status.L;
+end
+
+"""
     aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::IntVector)
     aposteriori!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::IntVector)
 
@@ -303,14 +334,22 @@ function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_mi
     if settings.compute_loglik == true
         update_loglik!(status, settings.R);
     end
+
+    # Update `status.history_*`
+    update_status_history!(settings, status);
 end
 
 function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing)
+    
+    # A-posteriori equivalent to a-priori in this case since no new data is observed
     status.X_post = copy(status.X_prior);
     status.P_post = copy(status.P_prior);
     status.e = zeros(1);
     status.inv_F = Symmetric(zeros(1,1));
     status.L = Matrix(1.0I, settings.m, settings.m);
+
+    # Update `status.history_*`
+    update_status_history!(settings, status);
 end
 
 aposteriori!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::Union{IntVector, Nothing}) = aposteriori!(settings, status.online_status, ind_not_missings);
@@ -407,37 +446,6 @@ call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::SymMatrix, 
 call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::UniformScaling{Float64}, ind_not_missings::Union{IntVector, Nothing}) = aposteriori_sequential!(settings, status, ind_not_missings);
 
 """
-    update_status_history!(settings::KalmanSettings, status::OnlineKalmanStatus)
-    update_status_history!(settings::KalmanSettings, status::DynamicKalmanStatus)
-    update_status_history!(settings::KalmanSettings, status::SizedKalmanStatus)
-
-Update the `status.history_*` arrays with a new entry, when needed.
-"""
-update_status_history!(settings::KalmanSettings, status::OnlineKalmanStatus) = nothing;
-
-function update_status_history!(settings::KalmanSettings, status::DynamicKalmanStatus)
-    if settings.store_history == true
-        push!(status.history_X_prior, status.X_prior);
-        push!(status.history_X_post, status.X_post);
-        push!(status.history_P_prior, status.P_prior);
-        push!(status.history_P_post, status.P_post);
-        push!(status.history_e, status.e);
-        push!(status.history_inv_F, status.inv_F);
-        push!(status.history_L, status.L);
-    end
-end
-
-function update_status_history!(settings::KalmanSettings, status::SizedKalmanStatus)
-    status.history_X_prior[status.online_status.t] = status.online_status.X_prior;
-    status.history_X_post[status.online_status.t] = status.online_status.X_post;
-    status.history_P_prior[status.online_status.t] = status.online_status.P_prior;
-    status.history_P_post[status.online_status.t] = status.online_status.P_post;
-    status.history_e[status.online_status.t] = status.online_status.e;
-    status.history_inv_F[status.online_status.t] = status.online_status.inv_F;
-    status.history_L[status.online_status.t] = status.online_status.L;
-end
-
-"""
     kfilter!(settings::KalmanSettings, status::KalmanStatus)
 
 Kalman filter: a-priori prediction and a-posteriori update.
@@ -459,9 +467,6 @@ function kfilter!(settings::KalmanSettings, status::KalmanStatus)
 
     # Ex-post update
     call_aposteriori!(settings, status, settings.R, ind_not_missings);
-
-    # Update `status.history_*`
-    update_status_history!(settings, status);
 end
 
 """
