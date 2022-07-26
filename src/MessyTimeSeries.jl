@@ -5,7 +5,6 @@ module MessyTimeSeries
     # Libraries
     using Dates, Distributed, Logging;
     using LinearAlgebra, Distributions, StableRNGs, Statistics;
-    using Infiltrator;
     
     # Custom dependencies
     local_path = dirname(@__FILE__);
