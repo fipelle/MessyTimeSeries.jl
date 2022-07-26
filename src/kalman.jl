@@ -198,7 +198,7 @@ Update status.inv_F.
 function update_inv_F!(R::UniformScaling{Float64}, status::KalmanStatus, B_it::SubArray{Float64})
     
     # Compute F_{i,t}
-    F_it = status.buffer_m_n_obs'*B_it; # I cannot use mul!(...) here since R is UniformScaling{Float64}
+    F_it = status.buffer_m_n_obs'*B_it; # I cannot use mul!(...) here since the target is a scalar
     F_it += R;
 
     # Store 1/F_{i,t}
@@ -401,7 +401,7 @@ function aposteriori_sequential!(settings::KalmanSettings, status::KalmanStatus,
         mul!(status.L[end], K_it, B_it', -1.0, 1.0);
 
         # A posteriori estimates: X_post
-        status.X_post += K_it*status.e[end]; # I cannot use mul!(...) here since status.e[end] is a scalar
+        mul!(status.X_post, K_it, status.e[end], 1.0, 1.0);
         
         # A posteriori estimates: P_post (P_post is updated using the Joseph form)
         update_P_post!(status, K_it, status.L[end], settings.R);
@@ -655,11 +655,11 @@ function update_smoothing_factors!(settings::KalmanSettings, status::KalmanStatu
         L_it = L[counter];
         
         # Shortcut for both J1_{i,t} and J2_{i,t}
-        status.buffer_m_n_obs = B_it*inv_F_it; # I cannot use mul!(...) here since `inv_F_it` is a scalar
-
+        mul!(status.buffer_m_n_obs, B_it, inv_F_it);
+        
         # Update J1
         mul!(status.buffer_J1, L_it', J1);
-        copyto!(J1, status.buffer_m_n_obs*e_it); # I cannot use mul!(...) here since `e_it` is a scalar
+        mul!(J1, status.buffer_m_n_obs, e_it);
         J1 .+= status.buffer_J1;
         
         # Update J2
