@@ -5,7 +5,7 @@ module MessyTimeSeries
     # Libraries
     using Dates, Distributed, Logging;
     using LinearAlgebra, Distributions, StableRNGs, Statistics;
-
+    
     # Custom dependencies
     local_path = dirname(@__FILE__);
     include("$(local_path)/types.jl");

@@ -45,7 +45,7 @@ function test_kalman_output(ksettings::KalmanSettings, kstatus::DynamicKalmanSta
         # A-posteriori
         @test round.(kstatus.X_post, digits=10) == benchmark_X_post[t];
         @test round.(kstatus.P_post, digits=10) == benchmark_P_post[t];
-
+        
         # 12-step ahead forecast
         @test round.(kforecast(ksettings, kstatus.X_post, 12)[end], digits=10) == benchmark_X_fc[t];
         @test round.(kforecast(ksettings, kstatus.X_post, kstatus.P_post, 12)[1][end], digits=10) == benchmark_X_fc[t];
@@ -136,7 +136,7 @@ function kalman_test(Y::JArray, B::FloatMatrix, R::Union{UniformScaling{Float64}
         ksettings = ksettings5;
 
         # Initialise kstatus
-        for kstatus in [DynamicKalmanStatus(), SizedKalmanStatus(size(Y,2))]
+        for kstatus in [DynamicKalmanStatus(), SizedKalmanStatus(ksettings)]
 
             test_kalman_output(ksettings, kstatus, benchmark_data);
 

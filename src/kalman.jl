@@ -62,7 +62,7 @@ function initialise_status_history!(settings::KalmanSettings, status::OnlineKalm
     end
 end
 
-function initialise_status_history!(settings::KalmanSettings, status::DynamicKalmanStatus)
+function initialise_status_history!(settings::KalmanSettings, status::DynamicKalmanStatus, R::SymMatrix)
     if settings.store_history == true
         status.history_X_prior = Array{FloatVector,1}();
         status.history_X_post = Array{FloatVector,1}();
@@ -72,6 +72,22 @@ function initialise_status_history!(settings::KalmanSettings, status::DynamicKal
         status.history_inv_F = Array{SymMatrix,1}();
         status.history_L = Array{FloatMatrix,1}();
     end
+end
+
+function initialise_status_history!(settings::KalmanSettings, status::DynamicKalmanStatus, R::UniformScaling{Float64})
+    if settings.store_history == true
+        status.history_X_prior = Array{FloatVector,1}();
+        status.history_X_post = Array{FloatVector,1}();
+        status.history_P_prior = Array{SymMatrix,1}();
+        status.history_P_post = Array{SymMatrix,1}();
+        status.history_e = Array{FloatVector,1}();
+        status.history_inv_F = Array{FloatVector,1}();
+        status.history_L = Array{Vector{FloatMatrix},1}();
+    end
+end
+
+function initialise_status_history!(settings::KalmanSettings, status::DynamicKalmanStatus)
+    initialise_status_history!(settings, status, settings.R);
 end
 
 function initialise_status_history!(settings::KalmanSettings, status::SizedKalmanStatus)
@@ -168,15 +184,25 @@ function find_observed_data(settings::KalmanSettings, t::Int64)
 end
 
 """
-    update_inv_F!(R::UniformScaling{Float64}, status::KalmanStatus, B_t::SubArray{Float64}, ind_not_missings::IntVector)
+    update_inv_F!(R::UniformScaling{Float64}, status::KalmanStatus, B_it::SubArray{Float64})
+
+Update status.inv_F when using the sequential processing approach.
+
+# Notes
+- `B_it` is a (mx1) column vector.
+
     update_inv_F!(R::SymMatrix, status::KalmanStatus, B_t::SubArray{Float64}, ind_not_missings::IntVector)
 
 Update status.inv_F.
 """
-function update_inv_F!(R::UniformScaling{Float64}, status::KalmanStatus, B_t::SubArray{Float64}, ind_not_missings::IntVector)
-    F_t = status.buffer_m_n_obs'*B_t'; # I cannot use mul!(...) here since R is UniformScaling{Float64}
-    F_t += R;
-    status.inv_F = inv(Symmetric(F_t));
+function update_inv_F!(R::UniformScaling{Float64}, status::KalmanStatus, B_it::SubArray{Float64})
+    
+    # Compute F_{i,t}
+    F_it = status.buffer_m_n_obs'*B_it; # I cannot use mul!(...) here since R is UniformScaling{Float64}
+    F_it += R;
+
+    # Store 1/F_{i,t}
+    push!(status.inv_F, 1/F_it); # 1/F_it is a scalar
 end
 
 function update_inv_F!(R::SymMatrix, status::KalmanStatus, B_t::SubArray{Float64}, ind_not_missings::IntVector)
@@ -186,27 +212,15 @@ function update_inv_F!(R::SymMatrix, status::KalmanStatus, B_t::SubArray{Float64
 end
 
 """
-    update_P_post!(P_post_old::SymMatrix, R_t::UniformScaling{Float64}, status::KalmanStatus, K_t::FloatMatrix, ind_not_missings::IntVector)
-    update_P_post!(P_post_old::Nothing, R_t::UniformScaling{Float64}, status::KalmanStatus, K_t::FloatMatrix, ind_not_missings::IntVector)
     update_P_post!(P_post_old::SymMatrix, R::SymMatrix, status::KalmanStatus, K_t::FloatMatrix, ind_not_missings::IntVector)
     update_P_post!(P_post_old::Nothing, R::SymMatrix, status::KalmanStatus, K_t::FloatMatrix, ind_not_missings::IntVector)
 
-Update status.P_post.
+Update `status.P_post`.
+
+    update_P_post!(status::KalmanStatus, K_it::FloatVector, L_it::FloatMatrix, R_it::UniformScaling{Float64})
+
+Update `status.P_post` using the sequential approach.
 """
-function update_P_post!(P_post_old::SymMatrix, R_t::UniformScaling{Float64}, status::KalmanStatus, K_t::FloatMatrix, ind_not_missings::IntVector)
-    mul!(status.buffer_m_m, status.L, status.P_prior);
-    mul!(status.P_post.data, status.buffer_m_m, status.L');
-    mul!(status.buffer_m_n_obs, K_t, R_t);
-    mul!(status.P_post.data, status.buffer_m_n_obs, K_t', 1.0, 1.0);
-end
-
-function update_P_post!(P_post_old::Nothing, R_t::UniformScaling{Float64}, status::KalmanStatus, K_t::FloatMatrix, ind_not_missings::IntVector)
-    mul!(status.buffer_m_m, status.L, status.P_prior);
-    status.P_post = Symmetric(status.buffer_m_m*status.L');
-    mul!(status.buffer_m_n_obs, K_t, R_t);
-    mul!(status.P_post.data, status.buffer_m_n_obs, K_t', 1.0, 1.0);
-end
-
 function update_P_post!(P_post_old::SymMatrix, R::SymMatrix, status::KalmanStatus, K_t::FloatMatrix, ind_not_missings::IntVector)
     R_t = @view R[ind_not_missings, ind_not_missings];
     mul!(status.buffer_m_m, status.L, status.P_prior);
@@ -223,16 +237,32 @@ function update_P_post!(P_post_old::Nothing, R::SymMatrix, status::KalmanStatus,
     mul!(status.P_post.data, status.buffer_m_n_obs, K_t', 1.0, 1.0);
 end
 
+function update_P_post!(status::KalmanStatus, K_it::FloatVector, L_it::FloatMatrix, R_it::UniformScaling{Float64})
+    mul!(status.buffer_m_m, L_it, status.P_post);
+    mul!(status.P_post.data, status.buffer_m_m, L_it');
+    status.buffer_m_n_obs = K_it*R_it; # I cannot use mul!(...) here due to the type of K_it and R_it
+    mul!(status.P_post.data, status.buffer_m_n_obs, K_it', 1.0, 1.0);
+end
+
 """
-    update_loglik!(status::KalmanStatus)
+    update_loglik!(status::KalmanStatus, R::SymMatrix)
 
 Update status.loglik.
 
+    update_loglik!(status::KalmanStatus, R::UniformScaling{Float64})
+
+Update status.loglik using the sequential approach.
+
 # Arguments
 - `status`: KalmanStatus struct
+- `R`: Covariance matrix of the measurement equations' error terms
 """
-function update_loglik!(status::KalmanStatus)
+function update_loglik!(status::KalmanStatus, R::SymMatrix)
     status.loglik -= 0.5*(-logdet(status.inv_F) + status.e'*status.inv_F*status.e);
+end
+
+function update_loglik!(status::KalmanStatus, R::UniformScaling{Float64})
+    status.loglik -= 0.5*(log(1)-log(status.inv_F[end]) + status.e[end]^2*status.inv_F[end]);
 end
 
 """
@@ -251,7 +281,7 @@ The update for the covariance matrix is implemented by using the Joseph's stabil
     aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing)
     aposteriori!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::Nothing)
 
-Kalman filter a-posteriori update. All measurements are not observed at time t.
+Kalman filter a-priori prediction. All measurements are not observed at time t.
 
 # Arguments
 - `settings`: KalmanSettings struct
@@ -290,21 +320,123 @@ function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_mi
     
     # Update log likelihood
     if settings.compute_loglik == true
-        update_loglik!(status);
+        update_loglik!(status, settings.R);
     end
 end
 
-aposteriori!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::IntVector) = aposteriori!(settings, status.online_status, ind_not_missings);
-
 function aposteriori!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing)
+    
+    # A-posteriori equivalent to a-priori in this case since no new data is observed
     status.X_post = copy(status.X_prior);
     status.P_post = copy(status.P_prior);
-    status.e = zeros(1);
+    status.e = Float64[];
     status.inv_F = Symmetric(zeros(1,1));
     status.L = Matrix(1.0I, settings.m, settings.m);
 end
 
+aposteriori!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::IntVector) = aposteriori!(settings, status.online_status, ind_not_missings);
 aposteriori!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::Nothing) = aposteriori!(settings, status.online_status, ind_not_missings);
+
+"""
+    aposteriori_sequential!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::IntVector)
+    aposteriori_sequential!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::IntVector)
+
+Sequential Kalman filter a-posteriori update. Measurements are observed (or partially observed) at time t.
+
+The update for the covariance matrix is implemented by using the Joseph's stabilised form (Bucy and Joseph, 1968).
+
+# Arguments
+- `settings`: KalmanSettings struct
+- `status`: KalmanStatus struct
+- `ind_not_missings`: Position of the observed measurements
+
+# Notes
+- The sequential processing (Anderson and Moore, 1979, section 6.4) employed in this function is also described as the univariate form of the Kalman filter (e.g., Durbin and Koopman, 2000).
+
+    aposteriori_sequential!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing)
+    aposteriori_sequential!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::Nothing)
+
+Kalman filter a-priori prediction for sequential processing. All measurements are not observed at time t.
+
+# Arguments
+- `settings`: KalmanSettings struct
+- `status`: KalmanStatus struct
+- `ind_not_missings`: Empty array
+
+# Notes
+- The sequential processing (Anderson and Moore, 1979, section 6.4) employed in this function is also described as the univariate form of the Kalman filter (e.g., Durbin and Koopman, 2000).
+"""
+function aposteriori_sequential!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::IntVector)
+
+    # Initialise sequential processing to the latest a-priori prediction
+    status.X_post = copy(status.X_prior);
+    status.P_post = copy(status.P_prior);
+
+    # Initialise key terms
+    status.e = Float64[];
+    status.inv_F = Float64[];
+    status.L = Vector{FloatMatrix}();
+    
+    # Sequentially process the observables
+    for i in ind_not_missings
+
+        # Convenient view
+        B_it = @view settings.B[i, :]; # this is (mx1) vector <- the use of an adjoint of a view would increase the number of operations required to finalise the a-posteriori update (too many adjoint calls)
+        
+        # Forecast error
+        push!(status.e, settings.Y.data[i, status.t] - B_it'*status.X_post); # I cannot use mul!(...) here since I am updating status.e element-wise
+
+        # Convenient shortcut for the forecast error covariance matrix and Kalman gain
+        # The line below initialises `status.buffer_m_n_obs` for the current series and point in time
+        status.buffer_m_n_obs = status.P_post*B_it; # this is a (mx1) vector
+
+        # Inverse of the forecast error covariance matrix
+        update_inv_F!(settings.R, status, B_it);
+
+        # Kalman gain
+        K_it = status.buffer_m_n_obs*status.inv_F[end];
+
+        # Convenient shortcut for the Joseph form and needed statistics for the Kalman smoother
+        push!(status.L, Matrix(1.0I, settings.m, settings.m));
+        mul!(status.L[end], K_it, B_it', -1.0, 1.0);
+
+        # A posteriori estimates: X_post
+        status.X_post += K_it*status.e[end]; # I cannot use mul!(...) here since status.e[end] is a scalar
+        
+        # A posteriori estimates: P_post (P_post is updated using the Joseph form)
+        update_P_post!(status, K_it, status.L[end], settings.R);
+        
+        # Update log likelihood
+        if settings.compute_loglik == true
+            update_loglik!(status, settings.R);
+        end
+    end
+end
+
+function aposteriori_sequential!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing)
+
+    # A-posteriori equivalent to a-priori in this case since no new data is observed
+    status.X_post = copy(status.X_prior);
+    status.P_post = copy(status.P_prior);
+    status.e = Float64[];
+    status.inv_F = Float64[];
+    status.L = Vector{FloatMatrix}();
+end
+
+aposteriori_sequential!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::IntVector) = aposteriori_sequential!(settings, status.online_status, ind_not_missings);
+aposteriori_sequential!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::Nothing) = aposteriori_sequential!(settings, status.online_status, ind_not_missings);
+
+"""
+    call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::SymMatrix, ind_not_missings::Union{IntVector, Nothing})
+
+Call standard aposteriori!(...) routine.
+
+    call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::UniformScaling{Float64}, ind_not_missings::Union{IntVector, Nothing})
+
+Call aposteriori_sequential!(...) for sequential a-posteriori update.
+"""
+call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::SymMatrix, ind_not_missings::Union{IntVector, Nothing}) = aposteriori!(settings, status, ind_not_missings);
+call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::UniformScaling{Float64}, ind_not_missings::Union{IntVector, Nothing}) = aposteriori_sequential!(settings, status, ind_not_missings);
 
 """
     update_status_history!(settings::KalmanSettings, status::OnlineKalmanStatus)
@@ -358,7 +490,7 @@ function kfilter!(settings::KalmanSettings, status::KalmanStatus)
     ind_not_missings = find_observed_data(settings, status);
 
     # Ex-post update
-    aposteriori!(settings, status, ind_not_missings);
+    call_aposteriori!(settings, status, settings.R, ind_not_missings);
 
     # Update `status.history_*`
     update_status_history!(settings, status);
@@ -472,15 +604,21 @@ retrieve_status_t(status::SizedKalmanStatus) = status.online_status.t;
 
 Update J1 and J2 with a-posteriori recursion.
 
+    update_smoothing_factors!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::IntVector, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::FloatVector, L::Vector{FloatMatrix})
+    update_smoothing_factors!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::IntVector, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::FloatVector, L::Vector{FloatMatrix})
+
+Update J1 and J2 with a-posteriori recursion and sequential approach.
+
     update_smoothing_factors!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix)
     update_smoothing_factors!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix)
     update_smoothing_factors!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::SymMatrix, L::FloatMatrix)
+    update_smoothing_factors!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::FloatVector, L::Vector{FloatMatrix})
 
 Update J1 and J2 with a-priori recursion when all series are missing.
 """
 function update_smoothing_factors!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::IntVector, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::SymMatrix, L::FloatMatrix)
 
-    # Retrieve coefficients
+    # Retrieve coefficients and key Kalman filter output
     B_t = @view settings.B[ind_not_missings, :];
     B_inv_F = B_t'*inv_F;
     mul!(status.buffer_m_m, L', settings.C');
@@ -498,6 +636,41 @@ end
 
 update_smoothing_factors!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::IntVector, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::SymMatrix, L::FloatMatrix) = update_smoothing_factors!(settings, status.online_status, ind_not_missings, J1, J2, e, inv_F, L);
 
+function update_smoothing_factors!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::IntVector, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::FloatVector, L::Vector{FloatMatrix})
+
+    # Initialise J1_{t} and J2_{t} following the approach in Durbin and Koopman (2000, section 5)
+    copyto!(J1, settings.C'*J1);
+    mul!(status.buffer_J2, settings.C', J2);
+    mul!(J2.data, status.buffer_J2, settings.C);
+
+    # Sequentially process the observables (in inverse order)
+    for counter in reverse(axes(ind_not_missings, 1))
+        
+        # Retrieve coefficients and key Kalman filter output
+        
+        # Convenient shortcuts
+        B_it = @views settings.B[ind_not_missings[counter], :]; # this is (mx1) vector
+        e_it = e[counter];
+        inv_F_it = inv_F[counter];
+        L_it = L[counter];
+        
+        # Shortcut for both J1_{i,t} and J2_{i,t}
+        status.buffer_m_n_obs = B_it*inv_F_it; # I cannot use mul!(...) here since `inv_F_it` is a scalar
+
+        # Update J1
+        mul!(status.buffer_J1, L_it', J1);
+        copyto!(J1, status.buffer_m_n_obs*e_it); # I cannot use mul!(...) here since `e_it` is a scalar
+        J1 .+= status.buffer_J1;
+        
+        # Update J2
+        mul!(status.buffer_J2, L_it', J2);
+        mul!(J2.data, status.buffer_J2, L_it);
+        mul!(J2.data, status.buffer_m_n_obs, B_it', 1.0, 1.0);
+    end
+end
+
+update_smoothing_factors!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::IntVector, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::FloatVector, L::Vector{FloatMatrix}) = update_smoothing_factors!(settings, status.online_status, ind_not_missings, J1, J2, e, inv_F, L);
+
 function update_smoothing_factors!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix)
     copyto!(J1, settings.C'*J1);
     mul!(status.buffer_J2, settings.C', J2);
@@ -506,6 +679,7 @@ end
 
 update_smoothing_factors!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix) = update_smoothing_factors!(settings, status.online_status, ind_not_missings, J1, J2);
 update_smoothing_factors!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::SymMatrix, L::FloatMatrix) = update_smoothing_factors!(settings, status, ind_not_missings, J1, J2);
+update_smoothing_factors!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::FloatVector, L::Vector{FloatMatrix}) = update_smoothing_factors!(settings, status, ind_not_missings, J1, J2);
 
 """
     backwards_pass(Xp::FloatVector, Pp::SymMatrix, J1::FloatVector)

@@ -204,12 +204,12 @@ mutable struct OnlineKalmanStatus <: KalmanStatus
     P_prior::Union{SymMatrix, Nothing}
     P_post::Union{SymMatrix, Nothing}
     e::Union{FloatVector, Nothing}
-    inv_F::Union{SymMatrix, Nothing}
-    L::Union{FloatMatrix, Nothing}
+    inv_F::Union{SymMatrix, FloatVector, Nothing}
+    L::Union{FloatMatrix, Vector{FloatMatrix}, Nothing}
     buffer_J1::Union{FloatVector, Nothing}
     buffer_J2::Union{FloatMatrix, Nothing}
     buffer_m_m::Union{FloatMatrix, Nothing}
-    buffer_m_n_obs::Union{FloatMatrix, Nothing}
+    buffer_m_n_obs::Union{FloatArray, Nothing}
 end
 
 """
@@ -253,19 +253,19 @@ mutable struct DynamicKalmanStatus <: KalmanStatus
     P_prior::Union{SymMatrix, Nothing}
     P_post::Union{SymMatrix, Nothing}
     e::Union{FloatVector, Nothing}
-    inv_F::Union{SymMatrix, Nothing}
-    L::Union{FloatMatrix, Nothing}
+    inv_F::Union{SymMatrix, FloatVector, Nothing}
+    L::Union{FloatMatrix, Vector{FloatMatrix}, Nothing}
     buffer_J1::Union{FloatVector, Nothing}
     buffer_J2::Union{FloatMatrix, Nothing}
     buffer_m_m::Union{FloatMatrix, Nothing}
-    buffer_m_n_obs::Union{FloatMatrix, Nothing}
+    buffer_m_n_obs::Union{FloatArray, Nothing}
     history_X_prior::Union{Array{FloatVector,1}, Nothing}
     history_X_post::Union{Array{FloatVector,1}, Nothing}
     history_P_prior::Union{Array{SymMatrix,1}, Nothing}
     history_P_post::Union{Array{SymMatrix,1}, Nothing}
     history_e::Union{Array{FloatVector,1}, Nothing}
-    history_inv_F::Union{Array{SymMatrix,1}, Nothing}
-    history_L::Union{Array{FloatMatrix,1}, Nothing}
+    history_inv_F::Union{Array{SymMatrix,1}, Array{FloatVector,1}, Nothing}
+    history_L::Union{Array{FloatMatrix,1}, Array{Vector{FloatMatrix},1}, Nothing}
 end
 
 """
@@ -299,16 +299,18 @@ struct SizedKalmanStatus <: KalmanStatus
     history_P_prior::Array{SymMatrix,1}
     history_P_post::Array{SymMatrix,1}
     history_e::Array{FloatVector,1}
-    history_inv_F::Array{SymMatrix,1}
-    history_L::Array{FloatMatrix,1}
+    history_inv_F::Union{Array{SymMatrix,1}, Array{FloatVector,1}}
+    history_L::Union{Array{FloatMatrix,1}, Array{Vector{FloatMatrix},1}}
 end
 
 """
-    SizedKalmanStatus(T::Int64)
+    SizedKalmanStatus(R::SymMatrix, T::Int64)
+    SizedKalmanStatus(R::UniformScaling{Float64}, T::Int64)
+    SizedKalmanStatus(settings::KalmanSettings)
 
-Return an initialised `SizedKalmanStatus` for some ``T``.
+Return an initialised `SizedKalmanStatus` struct. `R` specialises the struct for the regular / sequential implementation of the Kalman filter and smoother.
 """
-function SizedKalmanStatus(T::Int64)
+function SizedKalmanStatus(R::SymMatrix, T::Int64)
     history_X_prior = Array{FloatVector,1}(undef, T);
     history_X_post = Array{FloatVector,1}(undef, T);
     history_P_prior = Array{SymMatrix,1}(undef, T);
@@ -318,6 +320,19 @@ function SizedKalmanStatus(T::Int64)
     history_L = Array{FloatMatrix,1}(undef, T);
     return SizedKalmanStatus(OnlineKalmanStatus(), T, history_X_prior, history_X_post, history_P_prior, history_P_post, history_e, history_inv_F, history_L);
 end
+
+function SizedKalmanStatus(R::UniformScaling{Float64}, T::Int64)
+    history_X_prior = Array{FloatVector,1}(undef, T);
+    history_X_post = Array{FloatVector,1}(undef, T);
+    history_P_prior = Array{SymMatrix,1}(undef, T);
+    history_P_post = Array{SymMatrix,1}(undef, T);
+    history_e = Array{FloatVector,1}(undef, T);
+    history_inv_F = Array{FloatVector,1}(undef, T);
+    history_L = Array{Vector{FloatMatrix},1}(undef, T);
+    return SizedKalmanStatus(OnlineKalmanStatus(), T, history_X_prior, history_X_post, history_P_prior, history_P_post, history_e, history_inv_F, history_L);
+end
+
+SizedKalmanStatus(settings::KalmanSettings) = SizedKalmanStatus(settings.R, settings.Y.T);
 
 #=
 --------------------------------------------------------------------------------------------------------------------------------
