@@ -648,12 +648,12 @@ function update_smoothing_factors!(settings::KalmanSettings, status::KalmanStatu
         
         # Retrieve coefficients and key Kalman filter output
         
-        # Convenient views and pointers
+        # Convenient shortcuts
         B_it = @views settings.B[ind_not_missings[counter], :]; # this is (mx1) vector
-        e_it = @view e[counter];
-        inv_F_it = @view inv_F[counter];
+        e_it = e[counter];
+        inv_F_it = inv_F[counter];
         L_it = L[counter];
-
+        
         # Shortcut for both J1_{i,t} and J2_{i,t}
         status.buffer_m_n_obs = B_it*inv_F_it; # I cannot use mul!(...) here since `inv_F_it` is a scalar
 
