@@ -604,9 +604,15 @@ retrieve_status_t(status::SizedKalmanStatus) = status.online_status.t;
 
 Update J1 and J2 with a-posteriori recursion.
 
+    update_smoothing_factors!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::IntVector, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::FloatVector, L::Vector{FloatMatrix})
+    update_smoothing_factors!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::IntVector, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::FloatVector, L::Vector{FloatMatrix})
+
+Update J1 and J2 with a-posteriori recursion and sequential approach.
+
     update_smoothing_factors!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix)
     update_smoothing_factors!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix)
     update_smoothing_factors!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::SymMatrix, L::FloatMatrix)
+    update_smoothing_factors!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::FloatVector, L::Vector{FloatMatrix})
 
 Update J1 and J2 with a-priori recursion when all series are missing.
 """
@@ -630,6 +636,26 @@ end
 
 update_smoothing_factors!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::IntVector, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::SymMatrix, L::FloatMatrix) = update_smoothing_factors!(settings, status.online_status, ind_not_missings, J1, J2, e, inv_F, L);
 
+function update_smoothing_factors!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::IntVector, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::FloatVector, L::Vector{FloatMatrix})
+
+    # Retrieve coefficients
+    B_t = @view settings.B[ind_not_missings, :];
+    B_inv_F = B_t'*inv_F;
+    mul!(status.buffer_m_m, L', settings.C');
+
+    # Compute J1
+    mul!(status.buffer_J1, status.buffer_m_m, J1);
+    mul!(J1, B_inv_F, e);
+    J1 .+= status.buffer_J1;
+
+    # Compute J2
+    mul!(status.buffer_J2, status.buffer_m_m, J2);
+    mul!(J2.data, status.buffer_J2, status.buffer_m_m');
+    mul!(J2.data, B_inv_F, B_t, 1.0, 1.0);
+end
+
+update_smoothing_factors!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::IntVector, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::FloatVector, L::Vector{FloatMatrix}) = update_smoothing_factors!(settings, status.online_status, ind_not_missings, J1, J2, e, inv_F, L);
+
 function update_smoothing_factors!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix)
     copyto!(J1, settings.C'*J1);
     mul!(status.buffer_J2, settings.C', J2);
@@ -638,6 +664,7 @@ end
 
 update_smoothing_factors!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix) = update_smoothing_factors!(settings, status.online_status, ind_not_missings, J1, J2);
 update_smoothing_factors!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::SymMatrix, L::FloatMatrix) = update_smoothing_factors!(settings, status, ind_not_missings, J1, J2);
+update_smoothing_factors!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::FloatVector, L::Vector{FloatMatrix}) = update_smoothing_factors!(settings, status, ind_not_missings, J1, J2);
 
 """
     backwards_pass(Xp::FloatVector, Pp::SymMatrix, J1::FloatVector)
