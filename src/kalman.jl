@@ -618,7 +618,7 @@ Update J1 and J2 with a-priori recursion when all series are missing.
 """
 function update_smoothing_factors!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::IntVector, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::SymMatrix, L::FloatMatrix)
 
-    # Retrieve coefficients
+    # Retrieve coefficients and key Kalman filter output
     B_t = @view settings.B[ind_not_missings, :];
     B_inv_F = B_t'*inv_F;
     mul!(status.buffer_m_m, L', settings.C');
@@ -638,20 +638,35 @@ update_smoothing_factors!(settings::KalmanSettings, status::SizedKalmanStatus, i
 
 function update_smoothing_factors!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::IntVector, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::FloatVector, L::Vector{FloatMatrix})
 
-    # Retrieve coefficients
-    B_t = @view settings.B[ind_not_missings, :];
-    B_inv_F = B_t'*inv_F;
-    mul!(status.buffer_m_m, L', settings.C');
+    # Initialise J1_{t} and J2_{t} following the approach in Durbin and Koopman (2000, section 5)
+    copyto!(J1, settings.C'*J1);
+    mul!(status.buffer_J2, settings.C', J2);
+    mul!(J2.data, status.buffer_J2, settings.C);
 
-    # Compute J1
-    mul!(status.buffer_J1, status.buffer_m_m, J1);
-    mul!(J1, B_inv_F, e);
-    J1 .+= status.buffer_J1;
+    # Sequentially process the observables (in inverse order)
+    for counter in reverse(axes(ind_not_missings, 1))
+        
+        # Retrieve coefficients and key Kalman filter output
+        
+        # Convenient views and pointers
+        B_it = @views settings.B[ind_not_missings[counter], :]; # this is (mx1) vector
+        e_it = @view e[counter];
+        inv_F_it = @view inv_F[counter];
+        L_it = L[counter];
 
-    # Compute J2
-    mul!(status.buffer_J2, status.buffer_m_m, J2);
-    mul!(J2.data, status.buffer_J2, status.buffer_m_m');
-    mul!(J2.data, B_inv_F, B_t, 1.0, 1.0);
+        # Shortcut for both J1_{i,t} and J2_{i,t}
+        status.buffer_m_n_obs = B_it*inv_F_it; # I cannot use mul!(...) here since `inv_F_it` is a scalar
+
+        # Update J1
+        mul!(status.buffer_J1, L_it', J1);
+        copyto!(J1, status.buffer_m_n_obs*e_it); # I cannot use mul!(...) here since `e_it` is a scalar
+        J1 .+= status.buffer_J1;
+        
+        # Update J2
+        mul!(status.buffer_J2, L_it', J2);
+        mul!(J2.data, status.buffer_J2, L_it);
+        mul!(J2.data, status.buffer_m_n_obs, B_it', 1.0, 1.0);
+    end
 end
 
 update_smoothing_factors!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::IntVector, J1::FloatVector, J2::SymMatrix, e::FloatVector, inv_F::FloatVector, L::Vector{FloatMatrix}) = update_smoothing_factors!(settings, status.online_status, ind_not_missings, J1, J2, e, inv_F, L);
