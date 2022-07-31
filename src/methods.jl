@@ -26,6 +26,13 @@ Check whether `X` is larger or equal than `LB`
 check_bounds(X::Real, LB::Real) = X < LB ? throw(DomainError) : nothing
 
 """
+    pushcopy!(collection::AbstractVector, item::AbstractArray)
+
+Push copy of `item` into `collection`.
+"""
+pushcopy!(collection::AbstractVector, item::AbstractArray) = push!(collection, copy(item));
+
+"""
     error_info(err::Exception)
     error_info(err::RemoteException)
 

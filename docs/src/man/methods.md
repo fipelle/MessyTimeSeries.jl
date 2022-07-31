@@ -6,6 +6,11 @@ This package also includes the following general-purpose functions useful for ti
 
 ## Building blocks for time series algorithms
 
+### Base
+```@docs
+pushcopy!
+```
+
 ### Convenient mathematical and statistical operations
 ```@docs
 no_combinations
