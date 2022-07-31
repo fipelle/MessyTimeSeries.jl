@@ -52,6 +52,14 @@ function test_kalman_output(ksettings::KalmanSettings, kstatus::DynamicKalmanSta
         @test round.(kforecast(ksettings, kstatus.X_post, kstatus.P_post, 12)[2][end], digits=10) == benchmark_P_fc[t];
     end
 
+    # A-priori
+    @test round.(hcat(kstatus.history_X_prior...), digits=10) == hcat(benchmark_X_prior...);
+    @test round.(cat(dims=[1,2], kstatus.history_P_prior...), digits=10) == cat(dims=[1,2], benchmark_P_prior...);
+
+    # A-posteriori
+    @test round.(hcat(kstatus.history_X_post...), digits=10) == hcat(benchmark_X_post...);
+    @test round.(cat(dims=[1,2], kstatus.history_P_post...), digits=10) == cat(dims=[1,2], benchmark_P_post...);
+
     # Final value of the loglikelihood
     @test round.(kstatus.loglik, digits=10) == benchmark_loglik;
 end
@@ -81,6 +89,14 @@ function test_kalman_output(ksettings::KalmanSettings, kstatus::SizedKalmanStatu
         @test round.(kforecast(ksettings, kstatus.online_status.X_post, kstatus.online_status.P_post, 12)[2][end], digits=10) == benchmark_P_fc[t];
     end
 
+    # A-priori
+    @test round.(hcat(kstatus.history_X_prior...), digits=10) == hcat(benchmark_X_prior...);
+    @test round.(cat(dims=[1,2], kstatus.history_P_prior...), digits=10) == cat(dims=[1,2], benchmark_P_prior...);
+
+    # A-posteriori
+    @test round.(hcat(kstatus.history_X_post...), digits=10) == hcat(benchmark_X_post...);
+    @test round.(cat(dims=[1,2], kstatus.history_P_post...), digits=10) == cat(dims=[1,2], benchmark_P_post...);
+    
     # Final value of the loglikelihood
     @test round.(kstatus.online_status.loglik, digits=10) == benchmark_loglik;
 end

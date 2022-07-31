@@ -18,7 +18,7 @@ module MessyTimeSeries
            KalmanSettings, KalmanStatus, OnlineKalmanStatus, DynamicKalmanStatus, SizedKalmanStatus, ARIMASettings, VARIMASettings;
 
     # Export methods
-    export check_bounds, nan_to_missing!, error_info, verb_message, interpolate_series, forward_backwards_rw_interpolation, centred_moving_average,
+    export check_bounds, pushcopy!, nan_to_missing!, error_info, verb_message, interpolate_series, forward_backwards_rw_interpolation, centred_moving_average,
             soft_thresholding, solve_discrete_lyapunov, isconverged, trimmed_mean, sum_skipmissing, mean_skipmissing, std_skipmissing, is_vector_in_matrix, 
             demean, standardise, diff2, diff_or_diff2, lag, companion_form, no_combinations, rand_without_replacement, get_bounded_log, get_unbounded_log, get_bounded_logit, get_unbounded_logit;
 
