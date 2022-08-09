@@ -49,7 +49,6 @@ function initialise_apriori!(settings::KalmanSettings, status::KalmanStatus)
     # First a-priori prediction for X and P
     status.X_prior = apriori_X(settings.X0, settings);
     status.P_prior = apriori_P(settings.P0, settings);
-    status.P_inf_prior = apriori_P_inf(settings.P0_inf, settings);
 
     # Initialise buffers
     status.buffer_J1 = similar(status.X_prior);
@@ -143,7 +142,6 @@ end
 function apriori!(settings::KalmanSettings, status::KalmanStatus, old_X_prior::FloatVector)
     apriori_X!(settings, status);
     apriori_P!(settings, status);
-    apriori_P_inf!(settings, status, status.P_inf_post); # this implies that when `P_inf_post` is `nothing`, no a-priori predictions for `P_inf` are computed
 end
 
 apriori!(settings::KalmanSettings, status::SizedKalmanStatus, old_X_prior::FloatVector) = apriori!(settings, status.online_status, old_X_prior);
