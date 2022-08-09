@@ -40,18 +40,6 @@ function apriori_P!(settings::KalmanSettings, status::KalmanStatus)
 end
 
 """
-    apriori_P_inf(P_inf::Union{DiagMatrix, SymMatrix}, settings::KalmanSettings)
-
-A-priori prediction for `P_inf`.
-
-    apriori_P_inf(P_inf::Nothing, settings::KalmanSettings)
-
-Return `nothing`.
-"""
-apriori_P_inf(P_inf::Union{DiagMatrix, SymMatrix}, settings::KalmanSettings) = Symmetric(settings.C*P_inf*settings.C')::SymMatrix;
-apriori_P_inf(P_inf::Nothing, settings::KalmanSettings) = nothing;
-
-"""
     apriori_P_inf!(settings::KalmanSettings, status::KalmanStatus, old_P_inf::SymMatrix)
 
 In-place a-priori prediction for `P_inf`.
