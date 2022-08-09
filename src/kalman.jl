@@ -457,32 +457,16 @@ aposteriori_sequential!(settings::KalmanSettings, status::SizedKalmanStatus, ind
 aposteriori_sequential!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::Nothing) = aposteriori_sequential!(settings, status.online_status, ind_not_missings);
 
 """
-    call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::SymMatrix, P_inf_post::Nothing, ind_not_missings::Union{IntVector, Nothing})
+    call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::SymMatrix, ind_not_missings::Union{IntVector, Nothing})
 
 Call standard aposteriori!(...) routine.
 
-    call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::UniformScaling{Float64}, P_inf_post::Nothing, ind_not_missings::Union{IntVector, Nothing})
+    call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::UniformScaling{Float64}, ind_not_missings::Union{IntVector, Nothing})
 
 Call aposteriori_sequential!(...) for sequential a-posteriori update.
-
-    call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::UniformScaling{Float64}, P_inf_post::SymMatrix, ind_not_missings::Union{IntVector, Nothing})
-
-Call aposteriori_diffuse!(...) for the sequential diffuse a-posteriori update in Durbin and Koopman (2000).
-
-    call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::Union{SymMatrix, UniformScaling{Float64}}, ind_not_missings::Union{IntVector, Nothing})
-    call_aposteriori!(settings::KalmanSettings, status::SizedKalmanStatus, R::Union{SymMatrix, UniformScaling{Float64}}, ind_not_missings::Union{IntVector, Nothing})
-
-APIs to determine whether to call aposteriori!(...), aposteriori_sequential!(...) or aposteriori_diffuse!(...).
 """
-
-# Actual calls
-call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::SymMatrix, P_inf_post::Nothing, ind_not_missings::Union{IntVector, Nothing}) = aposteriori!(settings, status, ind_not_missings);
-call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::UniformScaling{Float64}, P_inf_post::Nothing, ind_not_missings::Union{IntVector, Nothing}) = aposteriori_sequential!(settings, status, ind_not_missings);
-call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::UniformScaling{Float64}, P_inf_post::SymMatrix, ind_not_missings::Union{IntVector, Nothing}) = aposteriori_diffuse!(settings, status, ind_not_missings);
-
-# APIs
-call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::Union{SymMatrix, UniformScaling{Float64}}, ind_not_missings::Union{IntVector, Nothing}) = call_aposteriori!(settings, status, R, status.P_inf_post, ind_not_missings);
-call_aposteriori!(settings::KalmanSettings, status::SizedKalmanStatus, R::Union{SymMatrix, UniformScaling{Float64}}, ind_not_missings::Union{IntVector, Nothing}) = call_aposteriori!(settings, status, R, status.online_status.P_inf_post, ind_not_missings);
+call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::SymMatrix, ind_not_missings::Union{IntVector, Nothing}) = aposteriori!(settings, status, ind_not_missings);
+call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::UniformScaling{Float64}, ind_not_missings::Union{IntVector, Nothing}) = aposteriori_sequential!(settings, status, ind_not_missings);
 
 """
     update_status_history!(settings::KalmanSettings, status::OnlineKalmanStatus)
