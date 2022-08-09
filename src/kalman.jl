@@ -40,22 +40,6 @@ function apriori_P!(settings::KalmanSettings, status::KalmanStatus)
 end
 
 """
-    apriori_P_inf!(settings::KalmanSettings, status::KalmanStatus, old_P_inf::SymMatrix)
-
-In-place a-priori prediction for `P_inf`.
-
-    apriori_P_inf!(settings::KalmanSettings, status::KalmanStatus, old_P_inf::Nothing)
-
-Return `nothing`.
-"""
-function apriori_P_inf!(settings::KalmanSettings, status::KalmanStatus, old_P_inf::SymMatrix)
-    mul!(status.buffer_m_m, settings.C, status.P_inf_post);
-    mul!(status.P_inf_prior.data, status.buffer_m_m, settings.C');
-end
-
-apriori_P_inf!(settings::KalmanSettings, status::KalmanStatus, old_P_inf::Nothing) = nothing;
-
-"""
     initialise_apriori!(settings::KalmanSettings, status::KalmanStatus)
 
 Initialise X_prior, P_prior and loglik.
