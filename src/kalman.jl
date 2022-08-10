@@ -40,6 +40,34 @@ function apriori_P!(settings::KalmanSettings, status::KalmanStatus)
 end
 
 """
+    apriori_P_inf(P_inf::Union{DiagMatrix, SymMatrix}, settings::KalmanSettings)
+
+A-priori prediction for `P_inf`.
+
+    apriori_P_inf(P_inf::Nothing, settings::KalmanSettings)
+
+Return `nothing`.
+"""
+apriori_P_inf(P_inf::Union{DiagMatrix, SymMatrix}, settings::KalmanSettings) = Symmetric(settings.C*P_inf*settings.C')::SymMatrix;
+apriori_P_inf(P_inf::Nothing, settings::KalmanSettings) = nothing;
+
+"""
+    apriori_P_inf!(settings::KalmanSettings, status::KalmanStatus, old_P_inf::SymMatrix)
+
+In-place a-priori prediction for `P_inf`.
+
+    apriori_P_inf!(settings::KalmanSettings, status::KalmanStatus, old_P_inf::Nothing)
+
+Return `nothing`.
+"""
+function apriori_P_inf!(settings::KalmanSettings, status::KalmanStatus, old_P_inf::SymMatrix)
+    mul!(status.buffer_m_m, settings.C, status.P_inf_post);
+    mul!(status.P_inf_prior.data, status.buffer_m_m, settings.C');
+end
+
+apriori_P_inf!(settings::KalmanSettings, status::KalmanStatus, old_P_inf::Nothing) = nothing;
+
+"""
     initialise_apriori!(settings::KalmanSettings, status::KalmanStatus)
 
 Initialise X_prior, P_prior and loglik.
@@ -49,6 +77,7 @@ function initialise_apriori!(settings::KalmanSettings, status::KalmanStatus)
     # First a-priori prediction for X and P
     status.X_prior = apriori_X(settings.X0, settings);
     status.P_prior = apriori_P(settings.P0, settings);
+    status.P_inf_prior = apriori_P_inf(settings.P0_inf, settings);
 
     # Initialise buffers
     status.buffer_J1 = similar(status.X_prior);
@@ -142,6 +171,7 @@ end
 function apriori!(settings::KalmanSettings, status::KalmanStatus, old_X_prior::FloatVector)
     apriori_X!(settings, status);
     apriori_P!(settings, status);
+    apriori_P_inf!(settings, status, status.P_inf_post); # this implies that when `P_inf_post` is `nothing`, no a-priori predictions for `P_inf` are computed
 end
 
 apriori!(settings::KalmanSettings, status::SizedKalmanStatus, old_X_prior::FloatVector) = apriori!(settings, status.online_status, old_X_prior);
@@ -457,16 +487,106 @@ aposteriori_sequential!(settings::KalmanSettings, status::SizedKalmanStatus, ind
 aposteriori_sequential!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::Nothing) = aposteriori_sequential!(settings, status.online_status, ind_not_missings);
 
 """
-    call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::SymMatrix, ind_not_missings::Union{IntVector, Nothing})
+    aposteriori_diffuse!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::IntVector)
+    aposteriori_diffuse!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::IntVector)
+
+Sequential diffuse Kalman filter a-posteriori update. Measurements are observed (or partially observed) at time t.
+
+This function implements the Durbin and Koopman (2000) approach to handle exact diffuse initial conditions.
+
+# Arguments
+- `settings`: KalmanSettings struct
+- `status`: KalmanStatus struct
+- `ind_not_missings`: Position of the observed measurements
+
+# Notes
+- The sequential processing (Anderson and Moore, 1979, section 6.4) employed in this function is also described as the univariate form of the Kalman filter (e.g., Durbin and Koopman, 2000).
+
+    aposteriori_diffuse!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing)
+    aposteriori_diffuse!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::Nothing)
+
+A-priori prediction for sequential diffuse Kalman filter. All measurements are missing at time t.
+
+# Arguments
+- `settings`: KalmanSettings struct
+- `status`: KalmanStatus struct
+- `ind_not_missings`: Empty array
+
+# Notes
+- The sequential processing (Anderson and Moore, 1979, section 6.4) employed in this function is also described as the univariate form of the Kalman filter (e.g., Durbin and Koopman, 2000).
+"""
+function aposteriori_diffuse!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::IntVector)
+
+    # Initialise sequential processing to the latest a-priori prediction
+    status.X_post = copy(status.X_prior);
+    status.P_post = copy(status.P_prior);
+    status.P_inf_post = copy(status.P_inf_prior);
+
+    # Initialise key terms
+    status.e = Float64[];
+    status.inv_F = Float64[];
+    status.L = Vector{FloatMatrix}();
+    
+    # Sequentially process the observables
+    for i in ind_not_missings
+
+        # Convenient view
+        B_it = @view settings.B[i, :]; # this is (mx1) vector <- the use of an adjoint of a view would increase the number of operations required to finalise the a-posteriori update (too many adjoint calls)
+        
+        # Forecast error
+        push!(status.e, settings.Y.data[i, status.t] - B_it'*status.X_post); # I cannot use mul!(...) here since I am updating status.e element-wise
+
+        # Convenient shortcut for the standard Kalman gain and F_{t}
+        status.buffer_m_n_obs = status.P_post*B_it;         # this is a (mx1) vector
+        update_inv_F!(settings.R, status, B_it);            # Inverse of the forecast error covariance matrix
+        K_it = status.buffer_m_n_obs*status.inv_F[end];     # Kalman gain
+
+        # Convenient shortcut for the "∞" Kalman gain and F_{t}
+        # TBD -> Start from here
+    end
+end
+
+function aposteriori_diffuse!(settings::KalmanSettings, status::KalmanStatus, ind_not_missings::Nothing)
+
+    # A-posteriori equivalent to a-priori in this case since no new data is observed
+    status.X_post = copy(status.X_prior);
+    status.P_post = copy(status.P_prior);
+    status.P_inf_post = copy(status.P_inf_prior);
+    status.e = Float64[];
+    status.inv_F = Float64[];
+    status.L = Vector{FloatMatrix}();
+end
+
+aposteriori_diffuse!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::IntVector) = aposteriori_diffuse!(settings, status.online_status, ind_not_missings);
+aposteriori_diffuse!(settings::KalmanSettings, status::SizedKalmanStatus, ind_not_missings::Nothing) = aposteriori_diffuse!(settings, status.online_status, ind_not_missings);
+
+"""
+    call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::SymMatrix, P_inf_post::Nothing, ind_not_missings::Union{IntVector, Nothing})
 
 Call standard aposteriori!(...) routine.
 
-    call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::UniformScaling{Float64}, ind_not_missings::Union{IntVector, Nothing})
+    call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::UniformScaling{Float64}, P_inf_post::Nothing, ind_not_missings::Union{IntVector, Nothing})
 
 Call aposteriori_sequential!(...) for sequential a-posteriori update.
+
+    call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::UniformScaling{Float64}, P_inf_post::SymMatrix, ind_not_missings::Union{IntVector, Nothing})
+
+Call aposteriori_diffuse!(...) for the sequential diffuse a-posteriori update in Durbin and Koopman (2000).
+
+    call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::Union{SymMatrix, UniformScaling{Float64}}, ind_not_missings::Union{IntVector, Nothing})
+    call_aposteriori!(settings::KalmanSettings, status::SizedKalmanStatus, R::Union{SymMatrix, UniformScaling{Float64}}, ind_not_missings::Union{IntVector, Nothing})
+
+APIs to determine whether to call aposteriori!(...), aposteriori_sequential!(...) or aposteriori_diffuse!(...).
 """
-call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::SymMatrix, ind_not_missings::Union{IntVector, Nothing}) = aposteriori!(settings, status, ind_not_missings);
-call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::UniformScaling{Float64}, ind_not_missings::Union{IntVector, Nothing}) = aposteriori_sequential!(settings, status, ind_not_missings);
+
+# Actual calls
+call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::SymMatrix, P_inf_post::Nothing, ind_not_missings::Union{IntVector, Nothing}) = aposteriori!(settings, status, ind_not_missings);
+call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::UniformScaling{Float64}, P_inf_post::Nothing, ind_not_missings::Union{IntVector, Nothing}) = aposteriori_sequential!(settings, status, ind_not_missings);
+call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::UniformScaling{Float64}, P_inf_post::SymMatrix, ind_not_missings::Union{IntVector, Nothing}) = aposteriori_diffuse!(settings, status, ind_not_missings);
+
+# APIs
+call_aposteriori!(settings::KalmanSettings, status::KalmanStatus, R::Union{SymMatrix, UniformScaling{Float64}}, ind_not_missings::Union{IntVector, Nothing}) = call_aposteriori!(settings, status, R, status.P_inf_post, ind_not_missings);
+call_aposteriori!(settings::KalmanSettings, status::SizedKalmanStatus, R::Union{SymMatrix, UniformScaling{Float64}}, ind_not_missings::Union{IntVector, Nothing}) = call_aposteriori!(settings, status, R, status.online_status.P_inf_post, ind_not_missings);
 
 """
     update_status_history!(settings::KalmanSettings, status::OnlineKalmanStatus)
