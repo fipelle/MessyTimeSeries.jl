@@ -381,14 +381,14 @@ function diff_or_diff2(A::AbstractArray, dims::Integer, use_diff::Bool)
 end
 
 """
-    compute_scaling_factor(current_series::JVector{Float64}, current_drift_selection::Bool)
+    compute_scaling_factor(data::JVector{Float64}, use_diff::Bool)
 
-Compute scaling factor for standardise_heterogeneous_data!(...).
+Compute scaling factor for non stationary data.
 """
-function compute_scaling_factor(current_series::JVector{Float64}, current_drift_selection::Bool)
+function compute_scaling_factor(data::JVector{Float64}, use_diff::Bool)
     
     # Differenced data
-    differenced_data = diff_or_diff2(current_series, 1, current_drift_selection);
+    differenced_data = diff_or_diff2(data, 1, use_diff);
 
     # Scaling factor
     scaling_factors = std_skipmissing(differenced_data);
