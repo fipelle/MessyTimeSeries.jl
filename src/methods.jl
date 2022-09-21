@@ -381,6 +381,23 @@ function diff_or_diff2(A::AbstractArray, dims::Integer, use_diff::Bool)
 end
 
 """
+    compute_scaling_factor(data::JVector{Float64}, use_diff::Bool)
+
+Compute scaling factor for non stationary data.
+"""
+function compute_scaling_factor(data::JVector{Float64}, use_diff::Bool)
+    
+    # Differenced data
+    differenced_data = diff_or_diff2(data, 1, use_diff);
+
+    # Scaling factor
+    scaling_factors = std_skipmissing(differenced_data);
+    
+    # Return output
+    return scaling_factors;
+end
+
+"""
     interpolate_series(X::JMatrix{Float64}, n::Int64, T::Int64)
 
 Interpolate each series in `X`, in turn, by replacing missing observations with the sample average of the non-missing values.
