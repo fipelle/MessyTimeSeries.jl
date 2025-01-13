@@ -648,7 +648,7 @@ end
 
 Draw `length(P)-d` elements from the positional vector `P` without replacement. 
 
-In the sampling process, no more than n-1 elements are removed for each point in time. `P` is permanently changed in the process.
+In the sampling process, no more than n-1 elements are removed for each point in time (except for the case in which n==1). `P` is permanently changed in the process.
 """
 function rand_without_replacement(rng::StableRNGs.LehmerRNG, n::Int64, T::Int64, d::Int64)
 
@@ -670,8 +670,9 @@ function rand_without_replacement(rng::StableRNGs.LehmerRNG, n::Int64, T::Int64,
             draw = rand(rng, P);
             coord_draw = @view coord[draw, :];
 
-            # Accept the draw if all observations are not missing for time t = coord[draw, :][2]
-            if coord_counter[coord_draw[2]] < n-1
+            # Case (1): if n>1, accept the draw if all observations are not missing for time t = coord[draw, :][2]
+            # Case (2): else, accept everytime
+            if ((n>1) & (coord_counter[coord_draw[2]] < n-1)) | (n==1)
                 coord_counter[coord_draw[2]] += 1;
 
                 # Draw without replacement
